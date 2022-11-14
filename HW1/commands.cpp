@@ -95,11 +95,13 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	else if (!strcmp(cmd, "fg") || !strcmp(cmd, "&fg") ) {
 		if(jobs == null){
 			cout << "smash error: fg: jobs list is empty" << endl;
+			illegal_cmd = false;
 			return FAILURE	
 		}
 
 		if(num_arg >1 ){
 			cout << "smash error: fg: invaild arguments" << endl;
+			illegal_cmd = false;
 			return FAILURE
 		}
 
@@ -141,11 +143,13 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	else if (!strcmp(cmd, "bg") || !strcmp(cmd, "&bg") ){
 		if(jobs == null){
 			cout << "smash error: bg: job-id "arg[1]" does now exist" << endl;
+			illegal_cmd = false;
 			return FAILURE	
 		}
 
 		if(num_arg > 1){
 			"smash error: bg: invalid arguments"<< endl;
+			illegal_cmd = false;
 			return FAILURE
 		}
 
@@ -200,10 +204,100 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 			
 /*************************************************/
 
-	else if (!strcmp(cmd, "quit") || !strcmp(cmd, "&quit") ){
-	
-   		
+	else if (!strcmp(cmd, "quit") || !strcmp(cmd, "&quit")){
+		// no relevant arguments were passed
+		if(num_arg == 0 || strcmp("kill", args[1]) != 0)
+			exit(0);
+
+		// "kill" argument was passed		
+		list<job>::iterator list_it = jobs->begin();
+		while(list_it != jobs->end()){
+			clock_t start;
+			int status;
+			bool terminated = false;
+			kill(list_it->job_id, SIGTERM);
+			//normalized to sec
+			start = clock()/CLOCKS_PER_SEC;
+			waitpid(list_it->job_id, status, WNOHANG)
+			
+			while(clock()/CLOCKS_PER_SEC <= start+5){
+				// child procces was terminated
+				if(WIFSIGNALED(status)){
+					terminated = true;	
+					break;
+				}
+			}
+
+			//process wasnt terminated -> sending SIGKILL
+			if((clock()/CLOCKS_PER_SEC > start+5) && !terminated)
+				kill(list_it->job_id, SIGKILL);
+
+			list<job>::iterator job_to_erase = list_it;
+			list_it++;
+			jobs->erase(job_to_erase);
+			if(jobs->size() == EMPTY)
+				break;	
+		}
+		exit(0)		
 	} 
+
+/*************************************************/
+
+	else if (!strcmp(cmd, "diff") || !strcmp(cmd, "&diff")){
+		if(num_arg != 2){
+			cout << "smash error: diff: invalid arguments" << endl;
+			illegal_cmd = false;
+			return FAILURE;
+		}
+
+		ifstream f1;
+		ifstream f2;
+		f1.open(arg[1], ifstream:ate | ifstream:binary);
+		f2.open(arg[2], ifstream:ate | ifstream:binary);
+
+		// checking both files
+		if(!f1 || !f2){
+			cout << "1" << endl;
+			f1.close();
+			f2.close();
+			return SUCCESS;
+		}
+
+		//files have diffrent size
+		if(f1.tellg() != f2.tellg()){
+			cout << "1" << endl;
+			f1.close();
+			f2.close();
+			return SUCCESS;
+		}
+
+		ifstream f1_start;
+		f2.close();
+		f1_start.open(arg[1], ifstream:in | ifstream:binary);
+		f2.open(arg[2], ifstream:in | ifstream:binary);
+		//initilize iterators to start of f1&f2 and another one to the end of f1
+		istream_iterator<char> f1_start_iterator (f1_start);
+		istream_iterator<char> f2_iterator (f2);
+		istream_iterator<char> f1_iterator (f1);
+		
+		if(equal(f1_start_iterator, f1_iterator, f2_iterator))
+			cout << "0" << endl;
+		else
+			cout << "1" << endl;
+		
+		f1.close();
+		f2.close();
+		f1_start.close();
+		return SUCCESS;	
+	}
+
+/*************************************************/
+
+
+}
+
+
+/*************************************************/
 
 	else{ // external command
 	
