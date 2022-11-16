@@ -84,20 +84,12 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	else if (!strcmp(cmd, "jobs") || !strcmp(cmd, "&jobs") ){
 		if(jobs == null)
 			return SUCCESS;
-        /*note: job has the members:
-            job_id
-            command
-            proccess_id
-            seconed_elapsed
-            state
-        update_listed_time() calcute the time since the job was listed
-		jobs (list) is sorted by job_id var;
-        */ 
+   
         //iterator to the start of the list
         list<job>::iterator list_it = jobs->begin();
         while(list_it != jobs->end()){
-            list_it->update_listed_time();
-			cout << "["list_it->job_id"] " << list_it->command " : " << list_it->proccess_id << " "<< list_it->seconed_elapsed;  
+			double time_since_inserted = difftime(time(), list_it->inserted_to_list_time);
+			cout << "["list_it->job_id"] " << list_it->command " : " << list_it->proccess_id << " " << time_since_inserted;  
             if(job->state == STOP_STATE)
                 cout << " (stopped)";
             cout << endl;
