@@ -32,29 +32,54 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 // ARE IN THIS CHAIN OF IF COMMANDS. PLEASE ADD
 // MORE IF STATEMENTS AS REQUIRED
 /*************************************************/
-	if (!strcmp(cmd, "cd") || !strcmp(cmd, "&cd") ){ 
-	
-		
-	} 
-	
-/*************************************************/
+	if (!strcmp(cmd, "showpid") || !strcmp(cmd, "&showpid") ){
+		unsigned int smash_pid = getpid();
+		cout << "smash pid is" << smash_pid << endl;
+		return SUCCESS;		
+	}
 
+/*************************************************/
 	else if (!strcmp(cmd, "pwd") || !strcmp(cmd, "&pwd") ){
 	
-        char current_path[MAX_LINE_SIZE];
+        char current_path[MAX_LINE_SIZE+1];
         getcwd(current_path,sizeof(current_path));
         cout << current_path << endl;
         return SUCCESS	
 	}
+		
+/*************************************************/	
+	else if (!strcmp(cmd, "cd") || !strcmp(cmd, "&cd") ){ 
+		if(num_arg > 1 || num_arg <1){
+			cout << "too many arguments" << endl;
+			return FAILURE
+		}
+
+		// check if the user want to change pwd previus one
+		if(!strcmp(arg[1], "-")){
+			char previous_pwd[MAX_LINE_SIZE+1];
+			
+			//check for previous pwd
+			if(!getcwd(previous_pwd,MAX_LINE_SIZE+1);){
+				cout << "smah error: OLDPWD not set" << endl;
+				return FAILURE;
+			}
+
+			else{
+				if(!chdir(previous_pwd))
+					return SUCCESS;	
+				
+				return FAILURE; 
+			}
+		}
+
+		//change to new pwd
+		if(!chdir(arg[1]))
+			return SUCCESS;
+
+		return FAILURE;	
+	} 
 	
 /*************************************************/
-
-	else if (!strcmp(cmd, "mkdir") || !strcmp(cmd, "&mkdir") ){
-	
- 		
-	}
-
-/*************************************************/	
 
 	else if (!strcmp(cmd, "jobs") || !strcmp(cmd, "&jobs") ){
 		if(jobs == null)
@@ -81,15 +106,48 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	}
 
 /*************************************************/
+	//check what if kill failed
+	//chack which signals do we have
+	else if(!strcmp(cmd, "kill") || !strcmp(cmd, "&kill") ){
+		if(num_arg != 2){
+			cout << "smash error: kill: invalid arguments" << endl;
+			return FAILURE;	
+		}
 
-	else if (!strcmp(cmd, "showpid") || !strcmp(cmd, "&showpid") ){
-		
-		
+		else{
+			int signum = atoi(arg[1]);
+			int job_id = atoi(arg[2]);
+			
+			if(signum < MIN_SIG_ID || !arg[1] || job_id < 0 || !arg[2] ){ 
+				cout << "smash error: kill: invalid arguments" << endl;
+				return FAILURE;
+			}
+			
+			list<job>::iterator job_iterator = jobs->begin();
+			while( job_iterator != jobs->end()){
+				//given job was found
+				if(job_iterator->job_id == job_id){
+						kill(job_iterator->Process_id,signum)	
+						 if(signum == SIGTSTP || signum == SIGSTOP || signum == SIGIOT)
+							job_iterator->state = STOP_STATE;
+
+						else if(signum == SIGKILL || signum == SIGBUS || signum == SIGHUP || signum == SIGTERM || signum == SIGINT)
+							jobs->erase(job_iterator);
+						
+						else if(signum == SIGCONT){
+							job_iterator->state = BACKGROUND_STATE;
+						}
+
+						cout << "signal number " << signum << "was sent to pid " << job_iterator->Process_id << endl; 
+						return SUCCESS;
+					}
+				job_iterator = job_iterator->next();
+			}
+			cout << "smash error: kill: job-id" << job_iterator->job_id << "does not exist" << endl;
+			return FAILURE;
+		}
 	}
 
-/*************************************************/
-
-	// fix :
 	//	1.what to do with fg procces
 	//  2.error invaild args
 	else if (!strcmp(cmd, "fg") || !strcmp(cmd, "&fg") ) {
@@ -290,12 +348,6 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 		f1_start.close();
 		return SUCCESS;	
 	}
-
-/*************************************************/
-
-
-}
-
 
 /*************************************************/
 
