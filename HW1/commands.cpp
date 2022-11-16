@@ -165,8 +165,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			list_it= jobs->pop_back();
 			cout << list_it->command " : " list_it->job_id << endl;
 			list_it->state = FORGROUND_STATE;
-			kill(list_it->job_id, SIGCONT);
-			waitpid(list_it->job_id ,null, WUNTRANCED);
+			kill(list_it->proccess_id, SIGCONT);
+			waitpid(list_it->proccess_id ,null, WUNTRANCED);
+			L_Fg_Cmd = list_it->command;
+			Fg_Proccss_Pid = list_it->proccess_id;
 			return SUCCESS;
 		}
 
@@ -177,8 +179,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 				cout << list_it->command ":" list_it->job_id << endl;
 				jobs->erase(list_it);
 				list_it->state = FORGROUND_STATE;
-				kill(list_it->job_id,SIGCONT);
-				waitpid(list_it->job_id ,null, WUNTRANCED);
+				kill(list_it->proccess_id, SIGCONT);
+				waitpid(list_it->proccess_id ,null, WUNTRANCED);
+				L_Fg_Cmd = list_it->command;
+				Fg_Proccss_Pid = list_it->proccess_id;
 				return SUCCESS;
 			}
 
@@ -283,7 +287,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			}
 
 			//process wasnt terminated -> sending SIGKILL
-			if((clock()/CLOCKS_PER_SEC > start+5) && !terminated)
+			if((clock()/CLOCKS_PER_SEC > (start + 5)) && !terminated)
 				kill(list_it->job_id, SIGKILL);
 
 			list<job>::iterator job_to_erase = list_it;
@@ -366,31 +370,38 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 //**************************************************************************************
 void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jobs){
 	int pID;
-    	switch(pID = fork()) 
-	{
-    		case -1: 
-					// Add your code here (error)
-					
-					/* 
-					your code
-					*/
-        	case 0 :
-                	// Child Process
-               		setpgrp();
-					
-			        // Add your code here (execute an external command)
-					
-					/* 
-					your code
-					*/
-			
-			default:
-                	// Add your code here
-					
-					/* 
-					your code
-					*/
-	}
+	switch(pID = fork()){
+	case -1: 
+			perror("smash error: fork failed");
+			break; 
+	case 0 :
+			setpgrp();
+			execv(args[0],args);
+			perror("smash error: execv failed");
+			break;
+
+	
+	default:
+			//process is in background
+			if(in_bg){
+				if(jobs->size() < 100){	
+					list<job>::iterator job_iterator = jobs->end();
+					int new_job_id = (job_iterator->job_id) + 1;
+					time_t  curr_time = time();
+					string command =  cmdString;
+					job new_job = job(new_job_id, command, pID, curr_time, BACKGROUND_STATE); 
+					jobs->push_back(new_job);
+				}
+			}
+
+			else{
+				L_Fg_Cmd = cmdString;
+				Fg_Proccss_Pid = pID;
+				waitpid(pId, NULL, WUNTRACED);
+			}
+			break;            	
+	}	
+	
 }
 //**************************************************************************************
 
@@ -418,7 +429,7 @@ int BgCmd(char* lineSize, list<job>* jobs){
 
 		//not built in cmd && bg cmd
 		if(!is_built_in_cmd(command)){
-			ExeCmd(args, command, true, jobs);
+			ExeExternal(args, command, true, jobs);
 			return 0;
 		}	
 	}
