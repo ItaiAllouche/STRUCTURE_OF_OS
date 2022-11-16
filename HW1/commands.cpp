@@ -54,26 +54,26 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 			return FAILURE
 		}
 
-		// check if the user want to change pwd previus one
+		//the user wants change pwd to previus one
 		if(!strcmp(arg[1], "-")){
 			char previous_pwd[MAX_LINE_SIZE+1];
 			
 			//check for previous pwd
-			if(!getcwd(previous_pwd,MAX_LINE_SIZE+1);){
+			if(getcwd(previous_pwd,MAX_LINE_SIZE+1) == null){
 				cout << "smah error: OLDPWD not set" << endl;
 				return FAILURE;
 			}
 
 			else{
-				if(!chdir(previous_pwd))
+				if(chdir(previous_pwd) == 0)
 					return SUCCESS;	
 				
 				return FAILURE; 
 			}
 		}
 
-		//change to new pwd
-		if(!chdir(arg[1]))
+		//change path to given path
+		if(chdir(arg[1]) == 0)
 			return SUCCESS;
 
 		return FAILURE;	
@@ -91,18 +91,19 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
             seconed_elapsed
             state
         update_listed_time() calcute the time since the job was listed
+		jobs (list) is sorted by job_id var;
         */ 
         //iterator to the start of the list
         list<job>::iterator list_it = jobs->begin();
         while(list_it != jobs->end()){
-            job->seconed_elapsed = update_listed_time(job);
-            printf("[%d] %c : %d %d ", job->job_id, job->command, job->proccess_id, job->seconed_elapsed);
+            list_it->update_listed_time();
+			cout << "["list_it->job_id"] " << list_it->command " : " << list_it->proccess_id << " "<< list_it->seconed_elapsed;  
             if(job->state == STOP_STATE)
-                printf("(stopped)");
-            printf("/n");
-            list_it++;
-            return SUCCESS	
-        }	
+                cout << " (stopped)";
+            cout << endl;
+            list_it = list_it->next();
+		}
+            return SUCCESS		
 	}
 
 /*************************************************/
@@ -138,20 +139,21 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 							job_iterator->state = BACKGROUND_STATE;
 						}
 
-						cout << "signal number " << signum << "was sent to pid " << job_iterator->Process_id << endl; 
+						cout << "signal number " << signum << "was sent to pid " << job_iterator->process_id << endl; 
 						return SUCCESS;
 					}
 				job_iterator = job_iterator->next();
 			}
-			cout << "smash error: kill: job-id" << job_iterator->job_id << "does not exist" << endl;
+			cout << "smash error: kill: job-id " << job_iterator->job_id << " does not exist" << endl;
 			return FAILURE;
 		}
 	}
+	/*************************************************/
 
 	//	1.what to do with fg procces
 	//  2.error invaild args
 	else if (!strcmp(cmd, "fg") || !strcmp(cmd, "&fg") ) {
-		if(jobs == null){
+		if(jobs == null && num_arg == 0){
 			cout << "smash error: fg: jobs list is empty" << endl;
 			illegal_cmd = false;
 			return FAILURE	
@@ -167,11 +169,12 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 
 		//given job has no id
 		if(num_arg == 0){
+			// max job->id in list
 			list_it= jobs->pop_back();
-			cout << list_it->command ":" list_it->job_id << endl;
+			cout << list_it->command " : " list_it->job_id << endl;
 			list_it->state = FORGROUND_STATE;
-			kill(list_it->job_id,SIGCONT);
-			waitpid(list_it->job_id);
+			kill(list_it->job_id, SIGCONT);
+			waitpid(list_it->job_id ,null, WUNTRANCED);
 			return SUCCESS;
 		}
 
@@ -183,13 +186,14 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 				jobs->erase(list_it);
 				list_it->state = FORGROUND_STATE;
 				kill(list_it->job_id,SIGCONT);
-				waitpid(list_it->job_id);
+				waitpid(list_it->job_id ,null, WUNTRANCED);
 				return SUCCESS;
 			}
-			list_it++;
+
+			list_it = list_it->next();
 		}
 		//no matched id in jobs list
-		cout << "smash error: fg: job-id "given_id" does not exist" << endl;
+		cout << "smash error: fg: job-id "<< given_id <<" does not exist" << endl;
 		return FAILURE;
 	}
 
@@ -199,7 +203,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	//	1.what to do with fg procces
 	//  2.error invaild args
 	else if (!strcmp(cmd, "bg") || !strcmp(cmd, "&bg") ){
-		if(jobs == null){
+		if(jobs == null && num_arg == 1){
 			cout << "smash error: bg: job-id "arg[1]" does now exist" << endl;
 			illegal_cmd = false;
 			return FAILURE	
@@ -216,10 +220,11 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 
 		//given job has no id
 		if(num_arg == 0){
-			while(list_it != jobs->end()){
+			while(list_it != jobs->end() && list_it != null){
 				if(list_it->state == STOP_STATE)
-					max_id_stopped_job = list_it;
-				list_it++;
+					if(max_id_stopped_job ==null || max_id_stopped_job->job_id <= list_it->job_id)
+						max_id_stopped_job = list_it; 
+				list_it = list_it->next();
 			}
 			
 			//no job is in stop state 
@@ -228,7 +233,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 				return FAILURE;	
 			}
 
-			cout << max_id_stopped_job->command ":" max_id_stopped_job->job_id << endl;
+			cout << max_id_stopped_job->command " : " max_id_stopped_job->job_id << endl;
 			max_id_stopped_job->state = BACKGROUND_STATE;
 			kill(max_id_stopped_job->job_id,SIGCONT); 
 			return SUCCESS;
@@ -239,7 +244,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 		while(list_it != jobs->end()){
 				if(list_it->job_id == given_id){
 					if(list_it->state == STOP_STATE){
-						cout << list_it->command ":" list_it->job_id << endl;
+						cout << list_it->command " : " list_it->job_id << endl;
 						list_it->state = BACKGROUND_STATE;
 						kill(max_id_stopped_job->job_id,SIGCONT); 
 						return SUCCESS;
@@ -247,16 +252,15 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 
 					//given job is in BACKGROUND STATE
 					else{
-						cout << "smash error: bg: job-id "list_it->job_id" is already running in the background" << endl;
+						cout << "smash error: bg: job-id "<< list_it->job_id << " is already running in the background" << endl;
 						return FAILURE
-
 					}
 				}
-				it++;
+				list_it = list_it->next();
 			}
 
 			//didnt find the given job
-			cout << "smash error: bg: job-id "given_id" does not exist" << endl;
+			cout << "smash error: bg: job-id " << given_id << " does not exist" << endl;
 			return FAILURE;
 	}
 			
