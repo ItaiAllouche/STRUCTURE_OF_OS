@@ -10,7 +10,7 @@ using namespace std;
 // Parameters: pointer to jobs, command string
 // Returns: 0 - success,1 - failure
 //**************************************************************************************
-int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
+int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 	char* cmd; 
 	char* args[MAX_ARG];
 	char pwd[MAX_LINE_SIZE];
@@ -32,14 +32,14 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 // ARE IN THIS CHAIN OF IF COMMANDS. PLEASE ADD
 // MORE IF STATEMENTS AS REQUIRED
 /*************************************************/
-	if (!strcmp(cmd, "showpid") || !strcmp(cmd, "&showpid") ){
+	if (!strcmp(cmd, "showpid")){
 		unsigned int smash_pid = getpid();
 		cout << "smash pid is" << smash_pid << endl;
 		return SUCCESS;		
 	}
 
 /*************************************************/
-	else if (!strcmp(cmd, "pwd") || !strcmp(cmd, "&pwd") ){
+	else if (!strcmp(cmd, "pwd")){
 	
         char current_path[MAX_LINE_SIZE+1];
         getcwd(current_path,sizeof(current_path));
@@ -48,7 +48,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	}
 		
 /*************************************************/	
-	else if (!strcmp(cmd, "cd") || !strcmp(cmd, "&cd") ){ 
+	else if (!strcmp(cmd, "cd")){ 
 		if(num_arg > 1 || num_arg <1){
 			cout << "too many arguments" << endl;
 			return FAILURE
@@ -81,7 +81,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	
 /*************************************************/
 
-	else if (!strcmp(cmd, "jobs") || !strcmp(cmd, "&jobs") ){
+	else if (!strcmp(cmd, "jobs")){
 		if(jobs == null)
 			return SUCCESS;
    
@@ -101,7 +101,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 /*************************************************/
 	//check what if kill failed
 	//chack which signals do we have
-	else if(!strcmp(cmd, "kill") || !strcmp(cmd, "&kill") ){
+	else if(!strcmp(cmd, "kill")){
 		if(num_arg != 2){
 			cout << "smash error: kill: invalid arguments" << endl;
 			return FAILURE;	
@@ -144,7 +144,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 
 	//	1.what to do with fg procces
 	//  2.error invaild args
-	else if (!strcmp(cmd, "fg") || !strcmp(cmd, "&fg") ) {
+	else if (!strcmp(cmd, "fg")) {
 		if(jobs == null && num_arg == 0){
 			cout << "smash error: fg: jobs list is empty" << endl;
 			illegal_cmd = false;
@@ -194,7 +194,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	// fix :
 	//	1.what to do with fg procces
 	//  2.error invaild args
-	else if (!strcmp(cmd, "bg") || !strcmp(cmd, "&bg") ){
+	else if (!strcmp(cmd, "bg")){
 		if(jobs == null && num_arg == 1){
 			cout << "smash error: bg: job-id "arg[1]" does now exist" << endl;
 			illegal_cmd = false;
@@ -258,7 +258,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 			
 /*************************************************/
 
-	else if (!strcmp(cmd, "quit") || !strcmp(cmd, "&quit")){
+	else if (!strcmp(cmd, "quit")){
 		// no relevant arguments were passed
 		if(num_arg == 0 || strcmp("kill", args[1]) != 0)
 			exit(0);
@@ -297,7 +297,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 
 /*************************************************/
 
-	else if (!strcmp(cmd, "diff") || !strcmp(cmd, "&diff")){
+	else if (!strcmp(cmd, "diff")){
 		if(num_arg != 2){
 			cout << "smash error: diff: invalid arguments" << endl;
 			illegal_cmd = false;
@@ -346,17 +346,16 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 	}
 
 /*************************************************/
+	// external command
+	else 
+ 		ExeExternal(args, cmdString, in_bg, jobs);
+	 	//return 0;
 
-	else{ // external command
-	
- 		ExeExternal(args, cmdString);
-	 	return 0;
-	}
-	if (illegal_cmd == TRUE)
+	/*if (illegal_cmd == TRUE)
 	{
 		printf("smash error: > \"%s\"\n", cmdString);
 		return 1;
-	}
+	}*/
     return 0;
 }
 //**************************************************************************************
@@ -365,8 +364,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, char* cmdString){
 // Parameters: external command arguments, external command string
 // Returns: void
 //**************************************************************************************
-void ExeExternal(char *args[MAX_ARG], char* cmdString)
-{
+void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jobs){
 	int pID;
     	switch(pID = fork()) 
 	{
@@ -395,48 +393,46 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString)
 	}
 }
 //**************************************************************************************
-// function name: ExeComp
-// Description: executes complicated command
-// Parameters: command string
-// Returns: 0- if complicated -1- if not
-//**************************************************************************************
-int ExeComp(char* lineSize)
-{
-	char ExtCmd[MAX_LINE_SIZE+2];
-	char *args[MAX_ARG];
-    if ((strstr(lineSize, "|")) || (strstr(lineSize, "<")) || (strstr(lineSize, ">")) || (strstr(lineSize, "*")) || (strstr(lineSize, "?")) || (strstr(lineSize, ">>")) || (strstr(lineSize, "|&")))
-    {
-		// Add your code here (execute a complicated command)
-					
-		/* 
-		your code
-		*/
-	} 
-	return -1;
-}
-//**************************************************************************************
+
 // function name: BgCmd
 // Description: if command is in background, insert the command to jobs
 // Parameters: command string, pointer to jobs
 // Returns: 0- BG command -1- if not
 //**************************************************************************************
-int BgCmd(char* lineSize, void* jobs)
-{
-
-	char* Command;
+int BgCmd(char* lineSize, list<job>* jobs){
+	char* command;
 	char* delimiters = " \t\n";
 	char *args[MAX_ARG];
-	if (lineSize[strlen(lineSize)-2] == '&')
-	{
+
+	if (lineSize[strlen(lineSize)-2] == '&'){
 		lineSize[strlen(lineSize)-2] = '\0';
-		// Add your code here (execute a in the background)
-					
-		/* 
-		your code
-		*/
-		
+		command = strtok(lineSize, delimiters);
+
+		if(command == null)
+			return SUCCESS;
+
+		arge[0] = command;
+
+		for(int i=1; i<MAX_ARG; i++)
+			arg[i] strtok(null, delimiters);
+
+		//not built in cmd && bg cmd
+		if(!is_built_in_cmd(command)){
+			ExeCmd(args, command, true, jobs);
+			return 0;
+		}	
 	}
+
 	return -1;
 }
 
+//**************************************************************************************
+bool is_built_in_cmd(char* command){
+	if( !strcmp(command, "showpid") || !strcmp(command, "pwd") || !strcmp(command, "cd") || !strcmp(command, "jobs") || !strcmp(command, "kill") || 
+		!strcmp(command, "fg") || !strcmp(command, "bg") || !strcmp(command, "quit") || !strcmp(command, "diff")){
+			return true;
+		}
+		return false;
+}
 
+//**************************************************************************************
