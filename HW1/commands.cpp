@@ -120,7 +120,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			while( job_iterator != jobs->end()){
 				//given job was found
 				if(job_iterator->job_id == job_id){
-						kill(job_iterator->Process_id,signum)	
+						if(kill(job_iterator->Process_id,signum) != SUCCESS){
+							perror("smash error: kill failed");
+							return FAILURE;
+						}	 	
 						 if(signum == SIGTSTP || signum == SIGSTOP || signum == SIGIOT)
 							job_iterator->state = STOP_STATE;
 
@@ -165,7 +168,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			list_it= jobs->pop_back();
 			cout << list_it->command " : " list_it->job_id << endl;
 			list_it->state = FORGROUND_STATE;
-			kill(list_it->proccess_id, SIGCONT);
+			if(kill(list_it->proccess_id, SIGCONT) != SUCCESS){
+				perror("smash error: kill failed");
+				return FAILURE;
+			}
 			waitpid(list_it->proccess_id ,null, WUNTRANCED);
 			L_Fg_Cmd = list_it->command;
 			Fg_Proccss_Pid = list_it->proccess_id;
@@ -179,7 +185,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 				cout << list_it->command ":" list_it->job_id << endl;
 				jobs->erase(list_it);
 				list_it->state = FORGROUND_STATE;
-				kill(list_it->proccess_id, SIGCONT);
+				if(kill(list_it->proccess_id, SIGCONT) != SUCCESS){
+					perror("smash error: kill failed");
+					return FAILURE;
+				}
 				waitpid(list_it->proccess_id ,null, WUNTRANCED);
 				L_Fg_Cmd = list_it->command;
 				Fg_Proccss_Pid = list_it->proccess_id;
@@ -231,7 +240,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 
 			cout << max_id_stopped_job->command " : " max_id_stopped_job->job_id << endl;
 			max_id_stopped_job->state = BACKGROUND_STATE;
-			kill(max_id_stopped_job->job_id,SIGCONT); 
+			if(kill(max_id_stopped_job->job_id,SIGCONT) != SUCCESS){
+				perror("smash error: kill failed");
+				return FAILURE;
+			}
 			return SUCCESS;
 		}
 
@@ -242,7 +254,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 					if(list_it->state == STOP_STATE){
 						cout << list_it->command " : " list_it->job_id << endl;
 						list_it->state = BACKGROUND_STATE;
-						kill(max_id_stopped_job->job_id,SIGCONT); 
+						if(kill(max_id_stopped_job->job_id,SIGCONT)!= SUCCESS){
+							perror("smash error: kill failed");
+							return FAILURE;
+						} 
 						return SUCCESS;
 					}
 
@@ -273,7 +288,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			clock_t start;
 			int status;
 			bool terminated = false;
-			kill(list_it->job_id, SIGTERM);
+			if(kill(list_it->job_id, SIGTERM) != SUCCESS){
+				perror("smash error: kill failed");
+				return FAILURE;
+			}
 			//normalized to sec
 			start = clock()/CLOCKS_PER_SEC;
 			waitpid(list_it->job_id, status, WNOHANG)
@@ -287,8 +305,13 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			}
 
 			//process wasnt terminated -> sending SIGKILL
-			if((clock()/CLOCKS_PER_SEC > (start + 5)) && !terminated)
-				kill(list_it->job_id, SIGKILL);
+			if((clock()/CLOCKS_PER_SEC > (start + 5)) && !terminated){
+				if(kill(list_it->job_id, SIGKILL) != SUCCESS){
+					perror("smash error: kill failed");
+					return FAILURE;
+				};
+
+			}
 
 			list<job>::iterator job_to_erase = list_it;
 			list_it++;
