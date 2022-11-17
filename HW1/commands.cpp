@@ -49,7 +49,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 		
 /*************************************************/	
 	else if (!strcmp(cmd, "cd")){ 
-		if(num_arg > 1 || num_arg <1){
+		if(num_arg > 1){
 			cout << "too many arguments" << endl;
 			return FAILURE
 		}
