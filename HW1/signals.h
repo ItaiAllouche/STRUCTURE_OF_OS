@@ -21,6 +21,7 @@
 
 extern int Fg_Proccss_Pid;
 extern string L_Fg_Cmd;
+extern list<job> jobs;
 
 void ctrl_z_hanlder(int pid);
 void ctrl_c_hanlder(int pid);

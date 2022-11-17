@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 	
 
 	//initilize signal handlers
-	if(signal(SIGINT, p_ctrl_c_handler) = SIG_ERR)
+	if(signal(SIGINT, p_ctrl_c_handler) == SIG_ERR)
 		perror("smash error: signal failed");
 	if(signal(SIGTSTP, p_ctrl_z_handler) == SIG_ERR)
 		perror("smash error: signal failed");
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
 				
 	else 
 		// run in fg
-		ExeCmd(&jobs, lineSize, false, cmdString, fg_pid);
+		ExeCmd(&jobs, lineSize, false, cmdString);
 	
 	/* initialize for next line read*/
 	lineSize[0]='\0';

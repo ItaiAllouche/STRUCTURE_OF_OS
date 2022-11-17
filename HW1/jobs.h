@@ -25,5 +25,6 @@ class job{
         job();
         job(int job_id, string command, int process_id, time_t inserted_to_list_time, int state);
         job(const job& copy_job);
-}
+};
+
 #endif

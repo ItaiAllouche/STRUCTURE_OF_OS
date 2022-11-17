@@ -29,9 +29,8 @@
 extern int Fg_Proccss_Pid;
 extern string L_Fg_Cmd;
 
-int ExeComp(char* lineSize);
 int BgCmd(char* lineSize, void* jobs);
-int ExeCmd(void* jobs, char* lineSize, char* cmdString);
-void ExeExternal(char *args[MAX_ARG], char* cmdString);
+int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString);
+void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jobs);
 #endif
 
