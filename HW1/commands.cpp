@@ -2,6 +2,8 @@
 
 using namespace std;
 
+char previous_path[MAX_LINE_SIZE] = "";
+
 
 
 //********************************************
@@ -53,29 +55,31 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			cout << "smash error: cd: too many arguments" << endl;
 			return FAILURE;
 		}
+		char temp_path[MAX_LINE_SIZE];
+		//saving current path
+		getcwd(temp_path, sizeof(temp_path));
 
-		//the user wants change pwd to previus one
+		//the user wants change pwd to previuos one
 		if(!strcmp(args[1], "-")){
-			char previous_pwd[MAX_LINE_SIZE+1];
-			
-			//check for previous pwd
-			if(getcwd(previous_pwd,MAX_LINE_SIZE+1) == NULL){
+			//no previous path 
+			if(!strcmp(previous_path,"")){
 				cout << "smah error: OLDPWD not set" << endl;
 				return FAILURE;
 			}
-
 			else{
-				if(chdir(previous_pwd) == 0)
-					return SUCCESS;	
-				
+				if(chdir(previous_path) == 0){
+					strcpy(previous_path, temp_path);
+					return SUCCESS;
+				}
 				return FAILURE; 
 			}
 		}
 
 		//change path to given path
-		if(chdir(args[1]) == 0)
+		if(chdir(args[1]) == 0){
+			strcpy(previous_path, temp_path);
 			return SUCCESS;
-
+		}
 		return FAILURE;	
 	} 
 	
@@ -389,10 +393,10 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 
 /*************************************************/
 	// external command
-	else 
+	else {
  		ExeExternal(args, cmdString, in_bg, jobs);
 	 	//return 0;
-
+	}
 	/*if (illegal_cmd == TRUE)
 	{
 		printf("smash error: > \"%s\"\n", cmdString);
