@@ -6,7 +6,7 @@ OBJS = smash.o commands.o signals.o jobs.o
 RM = rm -f
 # Creating the  executable
 smash: $(OBJS)
-	$(CCLINK) -o smash $(OBJS)
+	$(CCLINK) $(CFLAGS) -o smash $(OBJS)
 # Creating the object files
 commands.o: commands.cpp commands.h 
 smash.o: smash.cpp commands.h 

@@ -42,22 +42,22 @@ int main(int argc, char *argv[]){
 
 	
 	while (1){
-	printf("smash > ");
-	fgets(lineSize, MAX_LINE_SIZE, stdin);// stores input from stdin in lineSize
-	strcpy(cmdString, lineSize);    	
-	cmdString[strlen(lineSize)-1]='\0';
+		printf("smash > ");
+		fgets(lineSize, MAX_LINE_SIZE, stdin);// stores input from stdin in lineSize
+		strcpy(cmdString, lineSize);    	
+		cmdString[strlen(lineSize)-1]='\0';
 
-	// if bg cmd && exeternal cmd
-	if(BgCmd(lineSize, &jobs) == 0) continue; 
-				
-	else 
-		// run in fg
-		ExeCmd(&jobs, lineSize, false, cmdString);
-	
-	/* initialize for next line read*/
-	lineSize[0]='\0';
-	cmdString[0]='\0';
-}
+		// if bg cmd && exeternal cmd
+		if(BgCmd(lineSize, &jobs) == 0) continue; 
+					
+		else 
+			// run in fg
+			ExeCmd(&jobs, lineSize, false);
+		
+		/* initialize for next line read*/
+		lineSize[0]='\0';
+		cmdString[0]='\0';
+	}
 return 0;
 }
 

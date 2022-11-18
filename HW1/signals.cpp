@@ -10,11 +10,11 @@
 using namespace std;
 
 void ctrl_c_hanlder(int pid){
-   cout << "smash: caught ctrl-C" << endl;
+   cout << "smash: caught ctrl-C " << endl;
 
    if(pid > 0){
       if(kill(Fg_Proccss_Pid, SIGKILL) == SUCCESS)
-         cout << "smash: process " << Fg_Proccss_Pid << " was killed"; 
+         cout << "smash: process " << Fg_Proccss_Pid << " was killed" << endl; 
       else
          perror("smash error: kill failed");
       
@@ -25,11 +25,10 @@ void ctrl_c_hanlder(int pid){
 //cant recive list as arg, need to fix**
 void ctrl_z_hanlder(int pid){
    cout << "smash: caught ctrl-Z" << endl;
-
    if(pid > 0){
       if(kill(Fg_Proccss_Pid, SIGSTOP) == SUCCESS){
-         cout << "smash: process " << Fg_Proccss_Pid << " was stopped"; 
-         char cmd [MAX_LINE_SIZE] = "ctrlZ";
+         cout << "smash: process " << Fg_Proccss_Pid << " was stopped" << endl; 
+         //char cmd [MAX_LINE_SIZE] = "ctrlZ ";
          list<job>::iterator job_iterator = jobs.end();
          int new_job_id= job_iterator->job_id + 1;
          time_t curr_time = time(NULL);

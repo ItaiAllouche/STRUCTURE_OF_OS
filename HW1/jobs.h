@@ -22,6 +22,7 @@ class job{
         int process_id;
         clock_t inserted_to_list_time;
         int state;
+        bool bg_flag;
         job();
         job(int job_id, string command, int process_id, time_t inserted_to_list_time, int state);
         job(const job& copy_job);

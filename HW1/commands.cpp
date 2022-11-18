@@ -12,14 +12,14 @@ char previous_path[MAX_LINE_SIZE] = "";
 // Parameters: pointer to jobs, command string
 // Returns: 0 - success,1 - failure
 //**************************************************************************************
-int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
+int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg){
 	char* cmd; 
 	char* args[MAX_ARG];
 	char pwd[MAX_LINE_SIZE];
 	char* delimiters = " \t\n";
 	int i = 0, num_arg = 0;
 	bool illegal_cmd = false; // illegal command
-    	cmd = strtok(lineSize, delimiters);
+    cmd = strtok(lineSize, delimiters);
 	if (cmd == NULL)
 		return 0; 
    	args[0] = cmd;
@@ -93,9 +93,9 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
         list<job>::iterator list_it = jobs->begin();
         while(list_it != jobs->end()){
 			double time_since_inserted = difftime(time(NULL), list_it->inserted_to_list_time);
-			cout << "[" << list_it->job_id << "] " << list_it->command <<  " : " << list_it->process_id << " " << time_since_inserted;  
+			cout << "[" << list_it->job_id << "] " << list_it->command  <<  " : " << list_it->process_id << " " << time_since_inserted;
             if(list_it->state == STOP_STATE)
-                cout << " (stopped)";
+                cout << " secs (stopped)";
             cout << endl;
             list_it++;
 		}
@@ -138,7 +138,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 							job_iterator->state = BACKGROUND_STATE;
 						}
 
-						cout << "signal number " << signum << "was sent to pid " << job_iterator->process_id << endl; 
+						cout << "signal number " << signum << " was sent to pid " << job_iterator->process_id << endl; 
 						return SUCCESS;
 					}
 				job_iterator++;
@@ -171,7 +171,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 			// max job->id in list
 			list_it = jobs->end();
 			jobs->pop_back();
-			cout << list_it->command << " : " << list_it->job_id << endl;
+			cout << list_it->command << " : " << list_it->process_id<< endl;
 			list_it->state = FORGROUND_STATE;
 			if(kill(list_it->process_id, SIGCONT) != SUCCESS){
 				perror("smash error: kill failed");
@@ -187,17 +187,18 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 		//given job has id
 		int given_id = atoi(args[1]);
 		while(list_it != jobs->end()){
-			if(list_it->job_id = given_id){
-				cout << list_it->command << ":" << list_it->job_id << endl;
+			if(list_it->job_id == given_id){
+				cout << list_it->command << " : " << list_it->process_id << endl;
 				jobs->erase(list_it);
 				list_it->state = FORGROUND_STATE;
 				if(kill(list_it->process_id, SIGCONT) != SUCCESS){
 					perror("smash error: kill failed");
 					return FAILURE;
 				}
-				waitpid(list_it->process_id ,NULL, WUNTRACED);
 				L_Fg_Cmd = list_it->command;
+				cout << "debug alibaba  " << L_Fg_Cmd << endl;
 				Fg_Proccss_Pid = list_it->process_id;
+				waitpid(list_it->process_id ,NULL, WUNTRACED);
 				return SUCCESS;
 			}
 
@@ -258,7 +259,6 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 					cout << "smash error: bg: there are no stopped jobs to resume" << endl;
 					return FAILURE;	
 				}
-
 				cout << max_id_stopped_job->command  << " : " << max_id_stopped_job->job_id << endl;
 				max_id_stopped_job->state = BACKGROUND_STATE;
 				if(kill(max_id_stopped_job->process_id,SIGCONT) != SUCCESS){
@@ -394,7 +394,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 /*************************************************/
 	// external command
 	else {
- 		ExeExternal(args, cmdString, in_bg, jobs);
+ 		ExeExternal(args, cmd, in_bg, jobs, lineSize);
 	 	//return 0;
 	}
 	/*if (illegal_cmd == TRUE)
@@ -410,7 +410,7 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg, char* cmdString){
 // Parameters: external command arguments, external command string
 // Returns: void
 //**************************************************************************************
-void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jobs){
+void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jobs, char full_command[]){
 	int pID;
 	switch(pID = fork()){
 	case -1: 
@@ -424,20 +424,22 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jo
 
 	
 	default:
+			//cout << "debug  " << full_command << endl;
 			//process is in background
+
 			if(in_bg){
 				if(jobs->size() < 100){	
 					list<job>::iterator job_iterator = jobs->end();
 					int new_job_id = (job_iterator->job_id) + 1;
 					time_t  curr_time = time(NULL);
-					string command =  cmdString;
+					string command =  full_command;
 					job new_job = job(new_job_id, command, pID, curr_time, BACKGROUND_STATE); 
 					jobs->push_back(new_job);
 				}
 			}
 
 			else{
-				L_Fg_Cmd = cmdString;
+				L_Fg_Cmd = full_command;
 				Fg_Proccss_Pid = pID;
 				waitpid(pID, NULL, WUNTRACED);
 			}
@@ -471,11 +473,12 @@ int BgCmd(char* lineSize, list<job>* jobs){
 	char* command;
 	char* delimiters = " \t\n";
 	char *args[MAX_ARG];
-
-	if (lineSize[strlen(lineSize)-2] == '&'){
+	char full_command[MAX_LINE_SIZE+1];
+	strcpy(full_command,lineSize);
+	full_command[strlen(lineSize)-1]='\0';
+	if(lineSize[strlen(lineSize)-2] == '&'){
 		lineSize[strlen(lineSize)-2] = '\0';
 		command = strtok(lineSize, delimiters);
-
 		if(command == NULL)
 			return SUCCESS;
 
@@ -486,7 +489,7 @@ int BgCmd(char* lineSize, list<job>* jobs){
 
 		//not built in cmd && bg cmd
 		if(!is_built_in_cmd(command)){
-			ExeExternal(args, command, true, jobs);
+			ExeExternal(args, command, true, jobs, full_command);
 			return 0;
 		}	
 	}
