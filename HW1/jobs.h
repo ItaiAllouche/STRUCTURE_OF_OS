@@ -19,7 +19,7 @@ class job{
     public:
         int job_id;
         string command;
-        int proccess_id;
+        int process_id;
         clock_t inserted_to_list_time;
         int state;
         job();

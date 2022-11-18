@@ -1,14 +1,14 @@
-#include <jobs.h>
+#include "jobs.h"
 
-job::job(): {job_id = 0, command = "", process_id = 0, inserted_to_list_time = time(), state = ""}
+job::job(): job_id(0), command(""), process_id(0), inserted_to_list_time(time(NULL)), state(0){}
 
-job::job(int job_id, char* command, int process_id, clock_t inserted_to_list_time, int state){
-    job_id = job_id;
-    command = command;
-    process_id = process_id;
-    inserted_to_list_time = inserted_to_list_time;
-    state = state;
-}
+job::job(int job_id, string command, int process_id, time_t inserted_to_list_time, int state):
+    job_id(job_id),
+    command(command),
+    process_id(process_id),
+    inserted_to_list_time(inserted_to_list_time),
+    state(state){};
+
 
 job::job(const job& copy_job){
     job_id = copy_job.job_id;
