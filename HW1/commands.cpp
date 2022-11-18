@@ -3,7 +3,7 @@
 using namespace std;
 
 char previous_path[MAX_LINE_SIZE] = "";
-
+bool illegal_cmd = true;;
 
 
 //********************************************
@@ -18,7 +18,6 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg){
 	char pwd[MAX_LINE_SIZE];
 	char* delimiters = " \t\n";
 	int i = 0, num_arg = 0;
-	bool illegal_cmd = false; // illegal command
     cmd = strtok(lineSize, delimiters);
 	if (cmd == NULL)
 		return 0; 
@@ -154,13 +153,11 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg){
 	else if (!strcmp(cmd, "fg")) {
 		if(jobs == NULL && num_arg == 0){
 			cout << "smash error: fg: jobs list is empty" << endl;
-			illegal_cmd = false;
 			return FAILURE;	
 		}
 
 		if(num_arg >1 ){
 			cout << "smash error: fg: invaild arguments" << endl;
-			illegal_cmd = false;
 			return FAILURE;
 		}
 
@@ -189,14 +186,14 @@ int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg){
 		while(list_it != jobs->end()){
 			if(list_it->job_id == given_id){
 				cout << list_it->command << " : " << list_it->process_id << endl;
+				string temp  = list_it->command;
 				jobs->erase(list_it);
 				list_it->state = FORGROUND_STATE;
 				if(kill(list_it->process_id, SIGCONT) != SUCCESS){
 					perror("smash error: kill failed");
 					return FAILURE;
 				}
-				L_Fg_Cmd = list_it->command;
-				cout << "debug alibaba  " << L_Fg_Cmd << endl;
+				L_Fg_Cmd = temp;
 				Fg_Proccss_Pid = list_it->process_id;
 				waitpid(list_it->process_id ,NULL, WUNTRACED);
 				return SUCCESS;
@@ -418,17 +415,23 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jo
 			break; 
 	case 0 :
 			setpgrp();
-			execv(args[0],args);
-			perror("smash error: execv failed");
+			if(execv(args[0],args) == -1){
+				perror("smash error: execv failed");
+				exit(1);
+			}
+			else{
+				illegal_cmd  = true;
+			}
 			break;
 
 	
 	default:
-			//cout << "debug  " << full_command << endl;
 			//process is in background
-
 			if(in_bg){
-				if(jobs->size() < 100){	
+				if(!illegal_cmd){
+					return;
+				}
+				if(jobs->size() < 100 && illegal_cmd){	
 					list<job>::iterator job_iterator = jobs->end();
 					int new_job_id = (job_iterator->job_id) + 1;
 					time_t  curr_time = time(NULL);
