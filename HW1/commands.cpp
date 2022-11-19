@@ -109,10 +109,11 @@ int ExeCmd(char* lineSize, bool in_bg){
 		}
 
 		else{
-			int signum = atoi(args[1]);
+			////expected signum to be negative (suffix -) -> now signum should be positive
+			int signum = (-1)*atoi(args[1]);
 			int job_id = atoi(args[2]);
 			
-			if(signum < MIN_SIG_ID || !args[1] || job_id < 0 || !args[2] ){ 
+			if(signum < MIN_SIG_ID || job_id < 0){ 
 				cout << "smash error: kill: invalid arguments" << endl;
 				return FAILURE;
 			}
