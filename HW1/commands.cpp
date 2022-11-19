@@ -424,7 +424,7 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 	default:
 			//process is in background
 			if(in_bg){
-				if(jobs.size() < 100 ){	
+				if(jobs.size() < 100){	
 					list<job>::iterator job_iterator = jobs.end();
 					job_iterator--;
 					int new_job_id = (job_iterator->job_id) + 1;
@@ -432,6 +432,7 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 					string command =  full_command;
 					job new_job = job(new_job_id, command, pID, curr_time, BACKGROUND_STATE); 
 					jobs.push_back(new_job);
+					
 				}
 			}
 
@@ -463,7 +464,7 @@ bool is_built_in_cmd(char* command){
 //**************************************************************************************
 // function name: BgCmd
 // Description: if command is in background, insert the command to jobs
-// Parameters: command string, pointer to jobs
+// Parameters: command string
 // Returns: 0- BG command -1- if not
 //**************************************************************************************
 int BgCmd(char* lineSize){
