@@ -33,10 +33,11 @@ using namespace std;
 
 extern int Fg_Proccss_Pid;
 extern string L_Fg_Cmd;
+extern list<job> jobs;
 
-int BgCmd(char* lineSize, list<job>* jobs);
-int ExeCmd(list<job>* jobs, char* lineSize, bool in_bg);
-void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, list<job> *jobs, char full_command[]);
+int BgCmd(char* lineSize);
+int ExeCmd(char* lineSize, bool in_bg);
+void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_command[]);
 bool is_built_in_cmd(char* command);
 
 #endif

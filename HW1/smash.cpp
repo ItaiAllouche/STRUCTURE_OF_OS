@@ -48,11 +48,11 @@ int main(int argc, char *argv[]){
 		cmdString[strlen(lineSize)-1]='\0';
 
 		// if bg cmd && exeternal cmd
-		if(BgCmd(lineSize, &jobs) == 0) continue; 
+		if(BgCmd(lineSize) == 0) continue; 
 					
 		else 
 			// run in fg
-			ExeCmd(&jobs, lineSize, false);
+			ExeCmd(lineSize, false);
 		
 		/* initialize for next line read*/
 		lineSize[0]='\0';

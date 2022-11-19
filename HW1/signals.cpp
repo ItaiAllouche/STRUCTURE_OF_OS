@@ -29,8 +29,8 @@ void ctrl_z_hanlder(int pid){
       if(kill(Fg_Proccss_Pid, SIGSTOP) == SUCCESS){
          cout << "smash: process " << Fg_Proccss_Pid << " was stopped" << endl; 
          list<job>::iterator job_iterator = jobs.end();
+         job_iterator--;
          int new_job_id = (job_iterator->job_id) + 1;
-         //cout <<  "debug  " << job_iterator->command << " " << job_iterator->job_id << endl;
          time_t curr_time = time(NULL);
          job new_job(new_job_id, L_Fg_Cmd, Fg_Proccss_Pid, curr_time, STOP_STATE);
          jobs.push_back(new_job);
