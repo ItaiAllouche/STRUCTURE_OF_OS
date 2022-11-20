@@ -418,9 +418,10 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 	case 0 :
 			setpgrp();
 			if(execv(args[0],args) == -1){
-				perror("smash1 error: execv failed");
-				//why neccesery?
-				printf("smash > ");
+				perror("smash error: execv failed");
+				if(in_bg){
+					printf("smash > ");
+				}
 				exit(1);
 			}
 			else{
