@@ -47,6 +47,7 @@ int main(int argc, char *argv[]){
 		strcpy(cmdString, lineSize);    	
 		cmdString[strlen(lineSize)-1]='\0';
 
+		update_list();
 		// if bg cmd && exeternal cmd
 		if(BgCmd(lineSize) == 0) continue; 
 					

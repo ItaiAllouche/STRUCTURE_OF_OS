@@ -83,8 +83,13 @@ int ExeCmd(char* lineSize, bool in_bg){
 /*************************************************/
 
 	else if (!strcmp(cmd, "jobs")){
-		if(jobs.size() == 0)
+		if(jobs.size() == 0){
 			return SUCCESS;
+		}
+
+		//remove finished jobs if existing.
+		update_list();
+
    
         //iterator to the start of the list
         list<job>::iterator list_it = jobs.begin();
@@ -433,7 +438,8 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 					int new_job_id = (job_iterator->job_id) + 1;
 					time_t  curr_time = time(NULL);
 					string command =  full_command;
-					job new_job = job(new_job_id, command, pID, curr_time, BACKGROUND_STATE); 
+					job new_job = job(new_job_id, command, pID, curr_time, BACKGROUND_STATE);
+					update_list();
 					jobs.push_back(new_job);
 					}
 
@@ -497,3 +503,22 @@ int BgCmd(char* lineSize){
 	return -1;
 }
 
+//**************************************************************************************
+void update_list(){
+	if(jobs.size() == EMPTY){
+		return;
+	}
+
+	list<job>::iterator list_it = jobs.begin();
+
+	while(list_it != jobs.end()){
+		if(waitpid(list_it->process_id, NULL, WNOHANG) != 0){
+			list_it = jobs.erase(list_it);
+		}
+		else{
+			list_it++;
+		}
+	}
+	return;
+}
+//**************************************************************************************

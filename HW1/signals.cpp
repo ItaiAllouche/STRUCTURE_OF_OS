@@ -33,6 +33,7 @@ void ctrl_z_hanlder(int pid){
          int new_job_id = (job_iterator->job_id) + 1;
          time_t curr_time = time(NULL);
          job new_job(new_job_id, L_Fg_Cmd, Fg_Proccss_Pid, curr_time, STOP_STATE);
+         update_list();
          jobs.push_back(new_job);
       }
       else

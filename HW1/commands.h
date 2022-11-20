@@ -39,6 +39,7 @@ int BgCmd(char* lineSize);
 int ExeCmd(char* lineSize, bool in_bg);
 void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_command[]);
 bool is_built_in_cmd(char* command);
+void update_list();
 
 #endif
 
