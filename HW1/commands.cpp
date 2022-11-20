@@ -404,6 +404,7 @@ int ExeCmd(char* lineSize, bool in_bg){
 // Returns: void
 //**************************************************************************************
 void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_command[]){
+	int status;
 	int pID;
 	switch(pID = fork()){
 	case -1: 
@@ -412,7 +413,9 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 	case 0 :
 			setpgrp();
 			if(execv(args[0],args) == -1){
-				perror("smash error: execv failed");
+				perror("smash1 error: execv failed");
+				//why neccesery?
+				printf("smash > ");
 				exit(1);
 			}
 			else{
@@ -432,10 +435,10 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 					string command =  full_command;
 					job new_job = job(new_job_id, command, pID, curr_time, BACKGROUND_STATE); 
 					jobs.push_back(new_job);
-					
-				}
-			}
+					}
 
+				}
+			
 			else{
 				L_Fg_Cmd = full_command;
 				Fg_Proccss_Pid = pID;
