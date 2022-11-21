@@ -73,11 +73,15 @@ int ExeCmd(char* lineSize, bool in_bg){
 		}
 
 		//change path to given path
-		if(chdir(args[1]) == 0){
+		if(chdir(args[1]) != 0){
+			perror("smash error: chdir failed");
+			return FAILURE;	
+		}
+		else{
 			strcpy(previous_path, temp_path);
 			return SUCCESS;
 		}
-		return FAILURE;	
+		
 	} 
 	
 /*************************************************/
@@ -486,7 +490,9 @@ int BgCmd(char* lineSize){
 	full_command[strlen(lineSize)-1]='\0';
 	if(lineSize[strlen(lineSize)-2] == '&'){
 		lineSize[strlen(lineSize)-2] = '\0';
-		command = strtok(lineSize, delimiters);
+		char temp_lineSize[strlen(lineSize)];
+		strcpy(temp_lineSize,lineSize);
+		command = strtok(temp_lineSize, delimiters);
 		if(command == NULL)
 			return SUCCESS;
 
@@ -499,6 +505,9 @@ int BgCmd(char* lineSize){
 		if(!is_built_in_cmd(command)){
 			ExeExternal(args, command, true, full_command);
 			return 0;
+		}
+		else{
+			return -1;
 		}	
 	}
 	return -1;

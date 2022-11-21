@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
 
 		update_list();
 		// if bg cmd && exeternal cmd
-		if(BgCmd(lineSize) == 0) continue; 
+		if(BgCmd(lineSize)) continue; 
 					
 		else 
 			// run in fg
