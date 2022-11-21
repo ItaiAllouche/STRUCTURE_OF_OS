@@ -43,13 +43,13 @@ int main(int argc, char *argv[]){
 	
 	while (1){
 		printf("smash > ");
-		fgets(lineSize, MAX_LINE_SIZE, stdin);// stores input from stdin in lineSize
+		fgets(lineSize, MAX_LINE_SIZE, stdin);// stores input from sdin in lineSize
 		strcpy(cmdString, lineSize);    	
 		cmdString[strlen(lineSize)-1]='\0';
 
 		update_list();
 		// if bg cmd && exeternal cmd
-		if(BgCmd(lineSize)) continue; 
+		if(BgCmd(lineSize) == 0) continue; 
 					
 		else 
 			// run in fg

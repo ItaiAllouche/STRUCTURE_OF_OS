@@ -488,8 +488,11 @@ int BgCmd(char* lineSize){
 	char full_command[MAX_LINE_SIZE+1];
 	strcpy(full_command,lineSize);
 	full_command[strlen(lineSize)-1]='\0';
-	if(lineSize[strlen(lineSize)-2] == '&'){
-		lineSize[strlen(lineSize)-2] = '\0';
+	lineSize[strlen(lineSize)-1]='\0';
+	
+	//line size doesnt include & 
+	if(lineSize[strlen(lineSize)-1] == '&'){
+		lineSize[strlen(lineSize)-1] = '\0';
 		char temp_lineSize[strlen(lineSize)];
 		strcpy(temp_lineSize,lineSize);
 		command = strtok(temp_lineSize, delimiters);
