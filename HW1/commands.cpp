@@ -99,9 +99,9 @@ int ExeCmd(char* lineSize, bool in_bg){
         list<job>::iterator list_it = jobs.begin();
         while(list_it != jobs.end()){
 			double time_since_inserted = difftime(time(NULL), list_it->inserted_to_list_time);
-			cout << "[" << list_it->job_id << "] " << list_it->command  <<  " : " << list_it->process_id << " " << time_since_inserted;
+			cout << "[" << list_it->job_id << "] " << list_it->command  <<  " : " << list_it->process_id << " " << time_since_inserted << " secs";
             if(list_it->state == STOP_STATE)
-                cout << " secs (stopped)";
+                cout << " (stopped)";
             cout << endl;
             list_it++;
 		}
