@@ -20,6 +20,7 @@
 #define STOP_STATE 3
 
 extern int Fg_Proccss_Pid;
+extern int smash_pid;
 extern string L_Fg_Cmd;
 extern list<job> jobs;
 

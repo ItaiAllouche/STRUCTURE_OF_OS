@@ -16,7 +16,9 @@ main file. This file contains the main function of smash
 #define MAXARGS 20
 
 list<job> jobs;
-int Fg_Proccss_Pid = 0;
+//initilize pid of the process who runs in fg (smash)
+int Fg_Proccss_Pid = getpid();
+int smash_pid = Fg_Proccss_Pid;
 string L_Fg_Cmd;
 char lineSize[MAX_LINE_SIZE];
 
@@ -31,6 +33,7 @@ int main(int argc, char *argv[]){
     p_ctrl_c_handler = &ctrl_c_hanlder;
 	void(*p_ctrl_z_handler)(int);
     p_ctrl_z_handler = &ctrl_z_hanlder;
+	
 	
 	
 

@@ -359,10 +359,10 @@ int ExeCmd(char* lineSize, bool in_bg){
 
 		// checking both files
 		if(!f1 || !f2){
-			cout << "1" << endl;
+			perror("smash error: fopen failed");
 			f1.close();
 			f2.close();
-			return SUCCESS;
+			return FAILURE;
 		}
 
 		//files have diffrent size
@@ -370,7 +370,7 @@ int ExeCmd(char* lineSize, bool in_bg){
 			cout << "1" << endl;
 			f1.close();
 			f2.close();
-			return SUCCESS;
+			return FAILURE;
 		}
 
 		ifstream f1_start;
@@ -424,7 +424,7 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 			if(execv(args[0],args) == -1){
 				perror("smash error: execv failed");
 				if(in_bg){
-					printf("smash > ");
+					//printf("smash > ");
 				}
 				exit(1);
 			}

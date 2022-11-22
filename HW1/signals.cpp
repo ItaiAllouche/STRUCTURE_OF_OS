@@ -12,7 +12,7 @@ using namespace std;
 void ctrl_c_hanlder(int pid){
    cout << "smash: caught ctrl-C " << endl;
 
-   if(pid > 0){
+   if(pid > 0 && Fg_Proccss_Pid != smash_pid){
       if(kill(Fg_Proccss_Pid, SIGKILL) == SUCCESS)
          cout << "smash: process " << Fg_Proccss_Pid << " was killed" << endl; 
       else
@@ -35,6 +35,9 @@ void ctrl_z_hanlder(int pid){
          job new_job(new_job_id, L_Fg_Cmd, Fg_Proccss_Pid, curr_time, STOP_STATE);
          update_list();
          jobs.push_back(new_job);
+
+         //now smash process runs in fg
+         Fg_Proccss_Pid = smash_pid;
       }
       else
          perror("smash error: kill failed");  
