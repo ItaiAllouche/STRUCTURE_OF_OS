@@ -507,7 +507,7 @@ int BgCmd(char* lineSize){
 		//not built in cmd && bg cmd
 		if(!is_built_in_cmd(command)){
 			ExeExternal(args, command, true, full_command);
-			return 0;
+			return 2;
 		}
 		else{
 			return -1;
