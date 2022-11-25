@@ -25,7 +25,7 @@ void ctrl_c_hanlder(int pid){
 //cant recive list as arg, need to fix**
 void ctrl_z_hanlder(int pid){
    cout << "smash: caught ctrl-Z" << endl;
-   if(pid > 0){
+   if(pid > 0 && Fg_Proccss_Pid != smash_pid){
       if(kill(Fg_Proccss_Pid, SIGSTOP) == SUCCESS){
          cout << "smash: process " << Fg_Proccss_Pid << " was stopped" << endl; 
          list<job>::iterator job_iterator = jobs.end();

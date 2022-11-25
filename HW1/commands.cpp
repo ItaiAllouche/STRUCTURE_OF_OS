@@ -13,8 +13,8 @@ char previous_path[MAX_LINE_SIZE] = "";
 int ExeCmd(char* lineSize, bool in_bg){
 	char* cmd; 
 	char* args[MAX_ARG];
-	char pwd[MAX_LINE_SIZE];
-	char* delimiters = " \t\n";
+	//char pwd[MAX_LINE_SIZE];
+	const char*  delimiters = " \t\n";
 	int i = 0, num_arg = 0;
     cmd = strtok(lineSize, delimiters);
 	if (cmd == NULL)
@@ -413,7 +413,6 @@ int ExeCmd(char* lineSize, bool in_bg){
 // Returns: void
 //**************************************************************************************
 void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_command[]){
-	int status;
 	int pID;
 	switch(pID = fork()){
 	case -1: 
@@ -423,9 +422,6 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 			setpgrp();
 			if(execv(args[0],args) == -1){
 				perror("smash error: execv failed");
-				if(in_bg){
-					//printf("smash > ");
-				}
 				exit(1);
 			}
 			else{
@@ -483,7 +479,7 @@ bool is_built_in_cmd(char* command){
 //**************************************************************************************
 int BgCmd(char* lineSize){
 	char* command;
-	char* delimiters = " \t\n";
+	const char* delimiters = " \t\n";
 	char *args[MAX_ARG];
 	char full_command[MAX_LINE_SIZE+1];
 	strcpy(full_command,lineSize);
@@ -493,7 +489,7 @@ int BgCmd(char* lineSize){
 	//line size doesnt include & 
 	if(lineSize[strlen(lineSize)-1] == '&'){
 		lineSize[strlen(lineSize)-1] = '\0';
-		char temp_lineSize[strlen(lineSize)];
+		char temp_lineSize[MAX_LINE_SIZE+1];
 		strcpy(temp_lineSize,lineSize);
 		command = strtok(temp_lineSize, delimiters);
 		if(command == NULL)
