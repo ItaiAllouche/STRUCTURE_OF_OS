@@ -68,7 +68,11 @@ int ExeCmd(char* lineSize, bool in_bg){
 					strcpy(previous_path, temp_path);
 					return SUCCESS;
 				}
-				return FAILURE; 
+				else{
+					perror("smash error: chdir failed");
+					return FAILURE;
+				}
+				 
 			}
 		}
 
