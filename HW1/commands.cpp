@@ -221,7 +221,7 @@ int ExeCmd(char* lineSize, bool in_bg){
 
 /*************************************************/	
 	else if (!strcmp(cmd, "bg")){
-		//list is e,empty and an arg was passed
+		//list is empty and an arg was passed
 		if(jobs.size() == 0 && num_arg == 1){
 			cout << "smash error: bg: job-id "<< args[1] <<" does now exist" << endl;
 			return FAILURE;
@@ -256,8 +256,8 @@ int ExeCmd(char* lineSize, bool in_bg){
 						if((max_id_stopped_job->job_id) < (list_it->job_id)){
 							max_id_stopped_job = list_it; 
 						}
-					list_it++;
 					}
+					list_it++;
 				}
 				
 				//no job is at stop state 
@@ -424,7 +424,7 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString, bool in_bg, char full_com
 			break; 
 	case 0 :
 			setpgrp();
-			if(execv(args[0],args) == -1){
+			if(execvp(args[0],args) == -1){
 				perror("smash error: execv failed");
 				exit(1);
 			}
