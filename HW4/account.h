@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <ctime>
 
+#define ACTION_SLEEP_TIME 1
+
 using namespace std;
 
 class account{

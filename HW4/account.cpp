@@ -1,5 +1,6 @@
 #include "account.h"
 
+
 account::account(int id, int balance, int password){
     this->id = id;
     this->balance = balance;
@@ -21,6 +22,7 @@ bool account::vallid_password(int password){
 int account::get_balance(){
     pthread_mutex_lock(&lock_read);
     num_of_readers++;
+    sleep(ACTION_SLEEP_TIME);
 
     //first reader
     if(num_of_readers == 1){
@@ -43,13 +45,17 @@ int account::get_balance(){
 
 void account::deposit(int amount){
     pthread_mutex_lock(&lock_write);
+    sleep(ACTION_SLEEP_TIME);
     this->balance += amount;
     pthread_mutex_unlock(&lock_write);
 }
 
 bool account::withdrawl(int amount){
     pthread_mutex_lock(&lock_write);
+    sleep(ACTION_SLEEP_TIME);
+
     if(this->balance < amount){
+        pthread_mutex_unlock(&lock_write);
         return false;
     }
     this->balance -= amount;

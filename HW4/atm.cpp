@@ -17,6 +17,7 @@ bool atm::account_already_exists(int account_id){
         pthread_mutex_unlock(accounts_lock);
         return false;
     }
+
     pthread_mutex_unlock(accounts_lock);
     return true;
 }
@@ -43,8 +44,6 @@ bool atm::create_account(int account_id, int balance, int password){
 
 bool atm::deposit_to_account(int account_id, int password, int amount){
     map <int, account*>::iterator it;
-    pthread_mutex_lock(accounts_lock);
-    sleep(ACTION_SLEEP_TIME);
     it = map_of_accounts->begin();
     while(it != map_of_accounts->end()){
 
@@ -55,7 +54,6 @@ bool atm::deposit_to_account(int account_id, int password, int amount){
                 pthread_mutex_lock(log_print_lock);
                 *log_txt_ptr << this->id << ": Account "<< account_id << " new balance is " << it->second->balance  <<  "after " << amount << "$ was deposited" << endl;
                 pthread_mutex_unlock(log_print_lock);
-                pthread_mutex_lock(log_print_lock);
                 return true;
             }
 
@@ -77,9 +75,8 @@ bool atm::deposit_to_account(int account_id, int password, int amount){
 
 bool atm::withdrawl_from_account(int account_id, int password, int amount){
     map <int, account*>::iterator it;
-    pthread_mutex_lock(accounts_lock);
-    sleep(ACTION_SLEEP_TIME);
     it = map_of_accounts->begin();
+    pthread_mutex_lock(accounts_lock);
     while(it != map_of_accounts->end()){
 
         if(it->second->id == account_id){
@@ -91,7 +88,7 @@ bool atm::withdrawl_from_account(int account_id, int password, int amount){
                     pthread_mutex_lock(log_print_lock);
                     *log_txt_ptr << this->id << ": Account "<< account_id << " new balance is " << it->second->balance  <<  "after " << amount << "$ was withdrew" << endl;
                     pthread_mutex_unlock(log_print_lock);
-                    pthread_mutex_lock(log_print_lock);
+                    pthread_mutex_unlock(accounts_lock);
                     return true;       
                 }
 
@@ -99,6 +96,7 @@ bool atm::withdrawl_from_account(int account_id, int password, int amount){
                     pthread_mutex_lock(log_print_lock);
                     *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id" << account_id << " balance is lower than " << amount << endl;
                     pthread_mutex_unlock(log_print_lock);
+                    pthread_mutex_unlock(accounts_lock);
                     return false;
                 }  
             }
@@ -107,6 +105,7 @@ bool atm::withdrawl_from_account(int account_id, int password, int amount){
                 pthread_mutex_lock(log_print_lock);
                 *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id" << account_id << " is incorrect" << endl;
                 pthread_mutex_unlock(log_print_lock);
+                pthread_mutex_unlock(accounts_lock);
                 return false;
             }
         }
@@ -116,13 +115,13 @@ bool atm::withdrawl_from_account(int account_id, int password, int amount){
     pthread_mutex_lock(log_print_lock);
     *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id" << account_id << " is incorrect" << endl;
     pthread_mutex_unlock(log_print_lock);
+    pthread_mutex_unlock(accounts_lock);
     return false;
 }
 
 bool atm::closing_account(int account_id, int password){
     map <int, account*>::iterator it;
     pthread_mutex_lock(accounts_lock);
-    sleep(ACTION_SLEEP_TIME);
     it = map_of_accounts->begin();
     while(it != map_of_accounts->end()){
         if(it->second->id == account_id){
@@ -131,6 +130,7 @@ bool atm::closing_account(int account_id, int password){
                 *log_txt_ptr << this->id << ": Account "<< account_id << " is now closed. Balance was" << it->second->balance  << endl;
                 map_of_accounts->erase(it);
                 it->second->~account();
+                delete it->second;
                 pthread_mutex_unlock(log_print_lock);
                 pthread_mutex_unlock(accounts_lock);
                 return true;
