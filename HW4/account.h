@@ -12,8 +12,14 @@
 #include <iostream>
 #include <string>
 #include <string.h>
-
-typedef unsigned int uint;
+#include <unordered_map>
+#include <map>
+#include <string>
+#include <string.h>
+#include <vector>
+#include <unistd.h>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 

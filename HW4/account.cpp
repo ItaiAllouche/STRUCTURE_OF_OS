@@ -14,41 +14,45 @@ account::~account(){
     pthread_mutex_destroy(&lock_write);
 }
 
-bool vallid_password(int password){
-    return this->password = password ? true : false;
+bool account::vallid_password(int password){
+    return (this->password = password) ? true : false;
 }
 
-int get_balance(){
-    pthread_mutex_lock(lock_read);
+int account::get_balance(){
+    pthread_mutex_lock(&lock_read);
     num_of_readers++;
 
     //first reader
     if(num_of_readers == 1){
-        pthread_mutex_lock(lock_write);
+        pthread_mutex_lock(&lock_write);
     }
 
-    pthread_mutex_unlock(lock_read);
+    pthread_mutex_unlock(&lock_read);
     int output = balance;
-    pthread_mutex_lock(lock_read);
+    pthread_mutex_lock(&lock_read);
     num_of_readers--;
 
     //first reader
     if(num_of_readers == 0){
-        pthread_mutex_unlock(lock_write);
+        pthread_mutex_unlock(&lock_write);
     }
 
-    pthread_mutex_unlock(lock_read);
-    return output 
+    pthread_mutex_unlock(&lock_read);
+    return output;
 }
 
-void deposit(int amount){
-    pthread_mutex_lock(lock_write);
-    this->amount += amount;
-    pthread_mutex_unlock(lock_write);
+void account::deposit(int amount){
+    pthread_mutex_lock(&lock_write);
+    this->balance += amount;
+    pthread_mutex_unlock(&lock_write);
 }
 
-bool withdrawl(int amount){
-    pthread_mutex_lock(lock_write);
-    this->amount -= amount;
-    pthread_mutex_unlock(lock_write);
+bool account::withdrawl(int amount){
+    pthread_mutex_lock(&lock_write);
+    if(this->balance < amount){
+        return false;
+    }
+    this->balance -= amount;
+    pthread_mutex_unlock(&lock_write);
+    return true;
 }
