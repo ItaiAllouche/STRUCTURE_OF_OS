@@ -42,12 +42,22 @@ class account{
 
         uint num_of_readers;
 
-        int get_balance();
-
         bool vallid_password(int password);
 
         void deposit(int amount);
 
         bool withdrawl(int amount);
+
+        //abling wirte safley
+        void lock_for_write();
+
+         //unlock from writing mode
+        void unlock_from_write();
+
+        // abilng read safley
+        void lock_for_readres();
+
+        //unlock from reading mode
+        void unlock_from_read();
 };
 #endif

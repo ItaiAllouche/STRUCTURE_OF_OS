@@ -30,10 +30,6 @@ class atm{
     //constarctor -- rubin
     atm(uint id, string file_path, map<int,account*>* map_of_accounts, pthread_mutex_t* log_print_lock, pthread_mutex_t* accounts_lock, ofstream* log_txt_ptr);
 
-    //distractor 
-    //~atm();
-
-
     //class methods
     // ********************************************attaintion for mutexs - before every write to log file and map,use log_txt_ptr mebmber*******************************************
 
@@ -55,10 +51,7 @@ class atm{
 
     //transfter from src_account to dest_account if possible (src_amount.balance >= "amount") -- bruce
     void transfer_between_accounts(int src_account_id, int src_password, int dest_account_id, int dest_password, int amount);
-
-    //check if acount alreday exists in the  hash map -- bruce
-    bool account_already_exists(int account_id);
-    
+ 
     //parser the *input* file and call the required methods -- rubin
     void parser_file();
 
