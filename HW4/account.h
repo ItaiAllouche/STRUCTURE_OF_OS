@@ -30,6 +30,7 @@ class account{
         int id;
         int balance;
         int password;
+        bool deleted;
         account(int id, int balance, int password);
 
         ~account();

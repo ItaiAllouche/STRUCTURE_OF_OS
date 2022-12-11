@@ -6,6 +6,7 @@ account::account(int id, int balance, int password){
     this->balance = balance;
     this->password = password;
     this->num_of_readers = 0;
+    this->deleted = false;
     pthread_mutex_init(&lock_read, NULL);
     pthread_mutex_init(&lock_write, NULL);
 }
