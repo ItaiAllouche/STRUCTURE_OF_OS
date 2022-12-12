@@ -37,7 +37,7 @@ class atm{
 
     //creatrs a new accounts if isnt exsists - rubin
     //insert it to map if isnt exsist
-    void create_account(int acount_id, int balance, int password);
+    void create_account(int acount_id, int password, int balance);
 
     //deposit "amount" to given account (if exists) -- bruce
     void deposit_to_account(int account_id, int password, int amount);

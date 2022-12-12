@@ -1,29 +1,45 @@
-#include "account.h"
-#include "atm.h"
-#include <list>
+#include "bank.h"
 
-#define COMMISION_TIME 3
-#define SUCCESS 0
+bank::bank(){
+    this->balance = 0;
+    this->status = ACTIVE;
+    this->list_of_atms = new list<atm>;
+    this->map_of_accounts = new map<int,account*>;
+    this->map_of_deleted_accounts = new map<int,account*>;
+    this->log_txt_ptr.open("log.txt", ios::out);
+    this->log_print_lock = NULL
+    pthread_mutex_init(this->log_print_lock, NULL);
+    this->create_lock = NULL;
+    pthread_mutex_init(create_lock, NULL);
+}
 
-using namespace std;
+bank::~bank(){
+    this->list_of_atms->clear();
+    this->status = TERMINATED;
+    this->map_of_accounts->clear();
+    this->map_of_deleted_accounts->clear();
+    this->log_txt_ptr.close();    
+    pthread_mutex_destroy(this->log_print_lock);
+    pthread_mutex_destroy(this->create_lock);
+}
 
-void main(int argc, string argv[]){
-    list<account>* list_account;
-    pthread_mutex_t* log_print_lock;
-    pthread_mutex_t* accounts_lock;
-    int num_of_threads = argc;
-    int result;
-    pthread_t threads[num_of_threads];
-    for(int i=0; i<argc; i++){
-        pthread_create(&threads[i], NULL, (void *)&i); 
-
-
-
-
-    }
-
-
+void bank::fee_collection(){
 
 
 
 }
+
+void bank::accounts_status_print(){
+    while(this->status){
+        usleep(ACCOUNTS_PRINT_TIME);
+        map <int, account*>::iterator it = map_of_accounts->begin();
+        
+        while(it != map_of_accounts->end){
+            cout << "Account " << it->second->id << ": Balance - " << it->second->balance << " $, Account Password - " << it->second->password << endl;
+            it++;  
+        }
+        cout << "The Bank has "<< this->balance << " $" << endl;
+    }
+    return;   
+}
+

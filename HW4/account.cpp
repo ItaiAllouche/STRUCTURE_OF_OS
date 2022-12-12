@@ -17,7 +17,10 @@ account::~account(){
 }
 
 bool account::vallid_password(int password){
-    return (this->password = password) ? true : false;
+    if(this->password == password){
+        return true;
+    }
+    return false;
 }
 
 void account::deposit(int amount){
