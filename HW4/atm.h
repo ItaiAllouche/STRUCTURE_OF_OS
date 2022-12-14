@@ -8,25 +8,23 @@
 #define ATM_SLEEP_TIME 100000
 #define ACTION_SLEEP_TIME 1
 
-
 using namespace std;
 
 typedef unsigned int uint;
 
 class atm{
-    private:
+    public:
         uint id;
+        string file_path;
         map <int,account*>* map_of_accounts;
         map <int,account*>* map_of_deleted_accounts;
-        string file_path;
         ofstream* log_txt_ptr;
 
-    public:
-    //lock for print correctley in log file
-    pthread_mutex_t* log_print_lock;
+        //lock for print correctley in log file
+        pthread_mutex_t* log_print_lock;
 
-    //lock for create an account safley
-    pthread_mutex_t* create_lock;
+        //lock for create an account safley
+        pthread_mutex_t* create_lock;
 
     //constarctor
     atm(uint id, string file_path, map<int,account*>* map_of_accounts, map<int,account*>* map_of_deleted_accounts, pthread_mutex_t* log_print_lock, 
