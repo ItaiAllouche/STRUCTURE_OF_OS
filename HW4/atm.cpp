@@ -230,7 +230,7 @@ void atm::transfer_between_accounts(int src_account_id, int src_password, int de
     }
 
     //the dest_account has never been created
-    if(it_src == map_of_accounts->end()){
+    if(it_dest == map_of_accounts->end()){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << dest_account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);

@@ -22,6 +22,7 @@
 #include <map>
 #include <list>
 #include <string>
+#include <cmath>
 #include "account.h"
 #include "atm.h"
 
@@ -29,21 +30,19 @@
 #define FEE_TIME 3
 #define PERCENTAGE 100
 #define ACCOUNTS_PRINT_TIME 500000
-#define ACTIVE true;
-#define TERMINATED false;
 
 using namespace std;
  
- class bank{
+class bank{
     public:
         int balance;
-        bool status;
-        list<atm>* list_of_atms;
-        map <int,account*>* map_of_accounts;
-        map <int,account*>* map_of_deleted_accounts;
-        ofstream* log_txt_ptr;
-        pthread_mutex_t* log_print_lock;
-        pthread_mutex_t* create_lock;
+        list<atm*>* list_of_atms;
+        map<int,account*> map_of_accounts;
+        map<int,account*> map_of_deleted_accounts;
+        ofstream log_txt_ptr;
+        pthread_mutex_t log_print_lock;
+        pthread_mutex_t create_lock;
+        list<string>* list_of_files;
 
         //constractor
         bank();
@@ -51,11 +50,16 @@ using namespace std;
         //distractor
         ~bank();
 
-        //collect fees from every account, free percentage is rand(MAX_FEE) - every FEE_TIME
+        //collect fees from every account, fee percentage is rand(MAX_FEE) - every FEE_TIME
         void fee_collection();
 
-        //prints the status of all accounts **orderd by account_id** - every ACCOUNTS_PRINT_TIME
+        //print the status of all accounts everry ACCOUNTS_PRINT_TIME microsec (0.5 sec)
         void accounts_status_print();
- };
 
+        void execute_actions();
+
+        void free_accounts();
+
+        void free_atms();
+};
 #endif

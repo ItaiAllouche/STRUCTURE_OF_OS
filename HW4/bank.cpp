@@ -1,28 +1,25 @@
 #include "bank.h"
 
+bool progress = true;
+
 bank::bank(){
     this->balance = 0;
-    this->status = ACTIVE;
     this->list_of_atms = new list<atm*>;
-    //this->map_of_accounts = new  map<int,account*>;
-    //this->map_of_deleted_accounts = new map<int,account*>;
-    this->log_txt_ptr.open("log.txt,", ios::out);
-    //this->log_print_lock = NULL;
-    pthread_mutex_init(log_print_lock, NULL);
-    this->create_lock = NULL;
-    pthread_mutex_init(create_lock, NULL);
+    this->log_txt_ptr.open("log.txt", ios::out);
+    pthread_mutex_init(&this->log_print_lock, NULL);
+    pthread_mutex_init(&this->create_lock, NULL);
 }
 
 bank::~bank(){
-    this->balance = TERMINATED;
-    delete[] this->list_of_atms;
+    this->free_atms();
     this->log_txt_ptr.close();
-    pthread_mutex_destroy(this->log_print_lock);
-    pthread_mutex_destroy(this->create_lock);
+    pthread_mutex_destroy(&this->log_print_lock);
+    pthread_mutex_destroy(&this->create_lock);
+    this->free_accounts();    
 }
 
 void bank::accounts_status_print(){
-    while(this->status){
+    while(progress){
         usleep(ACCOUNTS_PRINT_TIME);
         printf("\033[2J");
         printf("\033[1;1H");
@@ -40,8 +37,9 @@ void bank::accounts_status_print(){
     return;   
 }
 
+//fix line 49 - fee is always equal to zero 
 void bank::fee_collection(){
-    while(this->status){
+    while(progress){
         sleep(FEE_TIME);
         int rand_fee = rand() % MAX_FEE + 1;
 
@@ -52,10 +50,40 @@ void bank::fee_collection(){
             this->balance += fee;
             it->second->balance -= fee;
             it->second->unlock_from_write();
+
+            pthread_mutex_lock(&log_print_lock);
+            log_txt_ptr << "Bank: commissions of " << rand_fee << " % were charged, the bank gained " << fee << " $ from account "<< it->second->id <<  endl;
+            pthread_mutex_unlock(&log_print_lock);
             it++;
         }
     }
     return;
+}
+
+void bank::free_accounts(){
+    map<int,account*>::iterator it1 = this->map_of_accounts.begin();
+    while(it1 != this->map_of_accounts.end()){
+        map<int,account*>::iterator temp_it = it1;
+        it1++;
+        delete temp_it->second;
+    }
+
+    map<int,account*>::iterator it2 = this->map_of_deleted_accounts.begin();
+    while(it2 != this->map_of_deleted_accounts.end()){
+        map<int,account*>::iterator temp_it = it2;
+        it2++;
+        delete temp_it->second;
+    }
+}
+
+void bank::free_atms(){
+    list<atm*>::iterator it = this->list_of_atms->begin();
+    while(it != this->list_of_atms->end()){
+        list<atm*>::iterator temp_it = it;
+        it++;
+        delete *temp_it;
+    }
+
 }
 
 void* atm_handler(void* generic_atm){
@@ -89,15 +117,16 @@ int main(int argc, char* argv[]){
 
     // fill array with vallid files
     vector<string> arr_of_files;
-    for(int i=1; i < argc-1; i++){
+
+    for(int i=1; i < argc; i++){
         string curr_file = argv[i];
         if(vallid_file(curr_file)){
             arr_of_files.push_back(curr_file);
         }
 
         else{
-            cerr << "Bank error: illegal arguments" << endl;;
-        exit(1);
+            cerr << "Bank error: illegal arguments" << endl;
+            exit(1);
         }
     }
 
@@ -107,7 +136,7 @@ int main(int argc, char* argv[]){
     atm* curr_atm;
 
     for(uint i=0; i<arr_of_files.size(); i++){
-        curr_atm = new atm(i,arr_of_files[i],&(leumi->map_of_accounts),&(leumi->map_of_deleted_accounts),leumi->log_print_lock,leumi->create_lock,&(leumi->log_txt_ptr));
+        curr_atm = new atm(1+i,arr_of_files[i],&(leumi->map_of_accounts),&(leumi->map_of_deleted_accounts),&(leumi->log_print_lock),&(leumi->create_lock),&(leumi->log_txt_ptr));
 
         if(pthread_create(&atm_threads[i],NULL,atm_handler,(void*)curr_atm) != 0){
             perror("Bank error: pthread_create failed");
@@ -131,11 +160,11 @@ int main(int argc, char* argv[]){
     for(uint i=0; i<arr_of_files.size(); i++){
         if(pthread_join(atm_threads[i],NULL) != 0){
             perror("Bank error: pthread_join failed");
-        }      
+        }  
     }
 
     //terminate leumi bank
-    leumi->status = TERMINATED;
+    progress = false;
 
     //wait for fee collection thread to terminate
     if(pthread_join(fee_collection_thread,NULL) != 0){
@@ -147,7 +176,8 @@ int main(int argc, char* argv[]){
         perror("Bank error: pthread_join failed");
     }
 
-    delete[] leumi;
+    delete[] atm_threads;
+    delete leumi;
 
     return 0;   
 }
