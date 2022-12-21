@@ -27,7 +27,7 @@ void bank::accounts_status_print(){
         cout << "Current Bank Status" << endl;
 
         map <int, account*>::iterator it = map_of_accounts.begin();
-        while(it != map_of_accounts.end()){
+        while(it != map_of_accounts.end() && it->second != 0){
             it->second->lock_for_readres();
             cout << "Account " << it->second->id << ": Balance - " << it->second->balance << " $, Account Password - " << it->second->password << endl;
             it->second->unlock_from_read();
@@ -45,7 +45,7 @@ void bank::fee_collection(){
         double rand_fee = rand() % MAX_FEE + 1;
 
         map <int, account*>::iterator it = map_of_accounts.begin();
-        while(it != map_of_accounts.end()){
+        while(it != map_of_accounts.end() && it->second != 0){
             it->second->lock_for_write();
             double to_round = (double)it->second->balance*(rand_fee / PERCENTAGE);
             int fee = (int)round(to_round);

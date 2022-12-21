@@ -5,8 +5,7 @@
 #include <map>
 #include <string>
 
-//#define ATM_SLEEP_TIME 100000
-#define ATM_SLEEP_TIME 1
+#define ATM_SLEEP_TIME 100000
 #define ACTION_SLEEP_TIME 1
 
 using namespace std;
