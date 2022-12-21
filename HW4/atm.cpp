@@ -1,21 +1,22 @@
 #include "atm.h"
 
 atm::atm(uint id, string file_path, map <int,account*>* map_of_accounts, map <int,account*>* map_of_deleted_accounts, pthread_mutex_t* log_print_lock,
-        pthread_mutex_t* create_lock, ofstream* log_txt_ptr){
+        pthread_mutex_t* create_lock, pthread_mutex_t* transfer_lock, ofstream* log_txt_ptr){
     this->id = id;
     this->file_path = file_path;
     this->map_of_accounts = map_of_accounts;
     this->map_of_deleted_accounts = map_of_deleted_accounts; 
     this->log_print_lock = log_print_lock;
     this->create_lock = create_lock;
+    this->transfer_lock = transfer_lock;
     this->log_txt_ptr = log_txt_ptr;
 }
 
-void atm::create_account(int account_id, int password, int balance){
+void atm::create_account(int account_id, string password, int balance){
     pthread_mutex_lock(create_lock);
     sleep(ACTION_SLEEP_TIME);
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
-    //the account is not exsit
+    //the account does not exsit
     if(it == map_of_accounts->end() || it->second->deleted ){
         account* new_account = new account(account_id, balance, password);
         new_account->lock_for_write();
@@ -37,7 +38,7 @@ void atm::create_account(int account_id, int password, int balance){
     }
 }
 
-void atm::deposit_to_account(int account_id, int password, int amount){
+void atm::deposit_to_account(int account_id, string password, int amount){
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
     //the account has never been created
@@ -80,7 +81,7 @@ void atm::deposit_to_account(int account_id, int password, int amount){
     }
 }
 
-void atm::withdrawl_from_account(int account_id, int password, int amount){
+void atm::withdrawl_from_account(int account_id, string password, int amount){
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
     //the account has never been created
@@ -107,7 +108,7 @@ void atm::withdrawl_from_account(int account_id, int password, int amount){
 
             else{
                 pthread_mutex_lock(log_print_lock);
-                *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id" << account_id << " balance is lower than " << amount << endl;
+                *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << account_id << " balance is lower than " << amount << endl;
                 pthread_mutex_unlock(log_print_lock);
                 it->second->unlock_from_write();
                 return;
@@ -132,7 +133,7 @@ void atm::withdrawl_from_account(int account_id, int password, int amount){
     }
 }
 
-void atm::closing_account(int account_id, int password){
+void atm::closing_account(int account_id, string password){
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
     //the account has never been created
@@ -177,7 +178,7 @@ void atm::closing_account(int account_id, int password){
     }
 }
 
-void atm::balance_check(int account_id, int password){
+void atm::balance_check(int account_id, string password){
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
     //the account has never been created
@@ -217,170 +218,132 @@ void atm::balance_check(int account_id, int password){
     }
 }
 
-void atm::transfer_between_accounts(int src_account_id, int src_password, int dest_account_id, int amount){
+void atm::transfer_between_accounts(int src_account_id, string src_password, int dest_account_id, int amount){
+    pthread_mutex_lock(this->transfer_lock);
     map<int,account*>::iterator it_src = map_of_accounts->find(src_account_id);
     map<int,account*>::iterator it_dest = map_of_accounts->find(dest_account_id);
 
     //the src_account has never been created
-    if(it_src == map_of_accounts->end()){
+    if(it_src == map_of_accounts->end() || it_src->second->deleted){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
+        pthread_mutex_unlock(this->transfer_lock);
         return;
     }
 
     //the dest_account has never been created
-    if(it_dest == map_of_accounts->end()){
+    if(it_dest == map_of_accounts->end() || it_dest->second->deleted){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << dest_account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
+        pthread_mutex_unlock(this->transfer_lock);
         return;
     }
 
     it_src->second->lock_for_write();
     it_dest->second->lock_for_write();
 
-    if((it_src != map_of_accounts->end()  && !it_src->second->deleted) && (it_dest != map_of_accounts->end() && !it_dest->second->deleted )){
-        if(it_src->second->vallid_password(src_password)){
-            
-            if(it_src->second->withdrawl(amount)){
-                it_dest->second->deposit(amount);;
+    if(it_src->second->vallid_password(src_password)){
+        
+        if(it_src->second->withdrawl(amount)){
+            it_dest->second->deposit(amount);
 
-                pthread_mutex_lock(log_print_lock);
-                *log_txt_ptr <<  this->id << ": Transfer " << amount << " from account " << src_account_id  << " to account " << dest_account_id \
-                << " new account balance is " << it_src->second->balance <<  " new target account balance is " << it_dest->second->balance << endl;
-                pthread_mutex_unlock(log_print_lock);
-                it_src->second->unlock_from_write();
-                it_dest->second->unlock_from_write();
-                return;
-            }
-
-            else{
-                pthread_mutex_lock(log_print_lock);
-                *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " balance is lower than " << amount << endl;
-                pthread_mutex_unlock(log_print_lock);
-                it_src->second->unlock_from_write();
-                it_dest->second->unlock_from_write();
-                return;
-            }
-
+            pthread_mutex_lock(log_print_lock);
+            *log_txt_ptr <<  this->id << ": Transfer " << amount << " from account " << src_account_id  << " to account " << dest_account_id \
+            << " new account balance is " << it_src->second->balance <<  " new target account balance is " << it_dest->second->balance << endl;
+            pthread_mutex_unlock(log_print_lock);
+            it_src->second->unlock_from_write();
+            it_dest->second->unlock_from_write();
+            pthread_mutex_unlock(this->transfer_lock);
+            return;
         }
 
         else{
             pthread_mutex_lock(log_print_lock);
-            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id " << src_account_id << " is incorrect" << endl;
+            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " balance is lower than " << amount << endl;
             pthread_mutex_unlock(log_print_lock);
             it_src->second->unlock_from_write();
             it_dest->second->unlock_from_write();
-            return;  
+            pthread_mutex_unlock(this->transfer_lock);
+            return;
         }
     }
 
     else{
         pthread_mutex_lock(log_print_lock);
-        //src account wasnt found
-        if(it_src == map_of_accounts->end() || it_src->second->deleted ){
-            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " <<src_account_id << " does not exist" << endl;
-        }
-        //dest account wasnt found
-        if(it_dest == map_of_accounts->end() || it_dest->second->deleted ){
-            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << dest_account_id << " does not exist" << endl;
-        }
-        
+        *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id " << src_account_id << " is incorrect" << endl;
         pthread_mutex_unlock(log_print_lock);
         it_src->second->unlock_from_write();
         it_dest->second->unlock_from_write();
-        return;
+        pthread_mutex_unlock(this->transfer_lock);
+        return;  
     }
 }
 
 void atm::parser_file(){
     ifstream input_file(this->file_path.c_str());
     string current_line;
-    int args[4];
-    int i = 0;
+    char action;
+    int account_id;
+    string account_password;
+    int amount;
+    int target_account_id;
 
     while(getline(input_file,current_line)){
-        char delimiters[] = " ";
-        char *token;
-
-        token = strtok(&current_line[0], delimiters);
-        while(token != NULL){
-            switch(*token){
-
-                //open an account
-                case 'O':
-                    i = 0;
-                    while(token != NULL && i<3){
-                        token = strtok( NULL, delimiters);
-                        args[i] = atoi(token);
-                        i++;
-                    }
-                    this->create_account(args[0], args[1], args[2]); 
-                    break;
-
-                //deposit to an account
-                case 'D':
-                    i = 0;     
-                    while(token != NULL && i<3){
-                        token = strtok( NULL, delimiters);
-                        args[i] = atoi(token);
-                        i++;
-                    }
-                    this->deposit_to_account(args[0], args[1], args[2]);
-                    break;
-
-                //withdrawl from an account
-                case 'W':
-                    i = 0;             
-                    while(token != NULL && i < 3){
-                    token = strtok( NULL, delimiters);
-                    args[i] = atoi(token);
-                    i++;
-                    }
-                    this->withdrawl_from_account(args[0], args[1], args[2]);
-                    break;
-
-                //check account balance
-                case 'B':
-                    i = 0;
-                    while(token != NULL && i < 2){
-                    token = strtok( NULL, delimiters);
-                    args[i] = atoi(token);
-                    i++;
-                    }
-                    this->balance_check(args[0], args[1]);
-                    break;
-
-                //close account
-                case 'Q': 
-                    i = 0; 
-                    while(token != NULL && i < 2){
-                        token = strtok( NULL, delimiters);
-                        args[i] = atoi(token);
-                        i++;
-                    }
-                    this->closing_account(args[0], args[1]);
-                    break;
-
-                //transfer between accounts
-                case 'T':
-                    i = 0;
-                    while(token != NULL && i < 4){
-                        token = strtok( NULL, delimiters);
-                        args[i] = atoi(token);
-                        i++;
-                    }
-                    this->transfer_between_accounts(args[0], args[1], args[2], args[3]);
-                    break;
-            }
-            
-            usleep(ATM_SLEEP_TIME);
-            break;
+        if(current_line.empty()){
+            continue;
         }
-   
+        stringstream full_line(current_line);
+        full_line >> action;
+        full_line >> account_id;
+        full_line >> account_password;
+
+        switch(action){
+
+            //open an account
+            case 'O':
+                full_line >> amount;
+                this->create_account(account_id, account_password, amount);
+                break;
+
+            //deposit from account
+            case 'D':
+                full_line >> amount;
+                this->deposit_to_account(account_id, account_password, amount);
+                break;
+
+            //withdrawl from account
+            case 'W':
+                full_line >> amount;
+                this->withdrawl_from_account(account_id, account_password, amount);
+                break;
+
+            //check balance of account
+            case 'B':
+                this->balance_check(account_id, account_password);
+                break;
+
+            //close an account
+                case 'Q':
+                this->closing_account(account_id, account_password);
+                break;
+
+            //transfer between accounts
+            case 'T':
+                full_line >> target_account_id;
+                full_line >> amount;
+                this->transfer_between_accounts(account_id, account_password, target_account_id, amount);
+                break;
+
+            default:
+                break;
+        }
+        usleep(ATM_SLEEP_TIME);
     }
+    input_file.close();
     return;
 }
+
 
 

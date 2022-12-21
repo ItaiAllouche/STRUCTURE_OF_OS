@@ -28,9 +28,9 @@ class account{
     public:
         int id;
         int balance;
-        int password;
+        string password;
         bool deleted;
-        account(int id, int balance, int password);
+        account(int id, int balance, string password);
 
         ~account();
 
@@ -42,7 +42,7 @@ class account{
 
         uint num_of_readers;
 
-        bool vallid_password(int password);
+        bool vallid_password(string password);
 
         void deposit(int amount);
 

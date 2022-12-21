@@ -29,7 +29,8 @@
 #define MAX_FEE 5
 #define FEE_TIME 3
 #define PERCENTAGE 100
-#define ACCOUNTS_PRINT_TIME 500000
+//#define ACCOUNTS_PRINT_TIME 500000
+#define ACCOUNTS_PRINT_TIME 1
 
 using namespace std;
  
@@ -42,6 +43,7 @@ class bank{
         ofstream log_txt_ptr;
         pthread_mutex_t log_print_lock;
         pthread_mutex_t create_lock;
+        pthread_mutex_t transfer_lock;
         list<string>* list_of_files;
 
         //constractor

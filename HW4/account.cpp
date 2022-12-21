@@ -1,7 +1,7 @@
 #include "account.h"
 
 
-account::account(int id, int balance, int password){
+account::account(int id, int balance, string password){
     this->id = id;
     this->balance = balance;
     this->password = password;
@@ -16,7 +16,7 @@ account::~account(){
     pthread_mutex_destroy(&lock_write);
 }
 
-bool account::vallid_password(int password){
+bool account::vallid_password(string password){
     if(this->password == password){
         return true;
     }
@@ -47,7 +47,7 @@ void account::unlock_from_write(){
 
 void account::lock_for_readres(){
     pthread_mutex_lock(&lock_read);
-    this->num_of_readers++;
+    this->num_of_readers = this->num_of_readers+1;
 
     //first reader
     if(num_of_readers == 1){
@@ -58,7 +58,7 @@ void account::lock_for_readres(){
 
 void account::unlock_from_read(){
     pthread_mutex_lock(&lock_read);
-    this->num_of_readers--;
+    this->num_of_readers = this->num_of_readers-1;
      
      //last reader
     if(num_of_readers == 0){
