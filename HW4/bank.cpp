@@ -141,6 +141,7 @@ int main(int argc, char* argv[]){
 
         if(pthread_create(&atm_threads[i],NULL,atm_handler,(void*)curr_atm) != 0){
             perror("Bank error: pthread_create failed");
+            exit(1);
         }
         leumi->list_of_atms->push_back(curr_atm);
     }
@@ -148,19 +149,22 @@ int main(int argc, char* argv[]){
     //initiate account print thread - in chrage of print current balance of accounts every 0.5 sec. execute by accounts_print_handler
     pthread_t accounts_print_thread;
     if(pthread_create(&accounts_print_thread,NULL,accounts_print_handler,(void*)leumi) != 0){
-        perror("Bank error: pthread_create failed");   
+        perror("Bank error: pthread_create failed");
+        exit(1);   
     }
 
     //initiate fee collection thread - in chrage of collect fees from accounts every 3 sec. exectue by fee_collection_handler
     pthread_t fee_collection_thread;
     if(pthread_create(&fee_collection_thread,NULL,fee_collection_handler,(void*)leumi) != 0){
-        perror("Bank error: pthread_create failed");   
+        perror("Bank error: pthread_create failed");
+        exit(1);   
     }
 
     //wait for atm threads to terminate
     for(uint i=0; i<arr_of_files.size(); i++){
         if(pthread_join(atm_threads[i],NULL) != 0){
             perror("Bank error: pthread_join failed");
+            exit(1);
         }  
     }
     //terminate leumi bank
@@ -169,11 +173,13 @@ int main(int argc, char* argv[]){
     //wait for fee collection thread to terminate
     if(pthread_join(fee_collection_thread,NULL) != 0){
         perror("Bank error: pthread_join failed");
+        exit(1);
     }
 
     //wait for accounts print thread to terminate
     if(pthread_join(accounts_print_thread,NULL) != 0){
         perror("Bank error: pthread_join failed");
+        exit(1);
     }
 
     delete[] atm_threads;
