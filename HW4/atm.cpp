@@ -23,8 +23,8 @@ void atm::create_account(int account_id, string password, int balance){
         map_of_accounts->insert(pair<int, account*>(account_id, new_account));
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << this->id << ": New account id is " <<  account_id << " with password " << password << " and initial balance " << balance << endl;
-        new_account->unlock_from_write();
         pthread_mutex_unlock(log_print_lock);
+        new_account->unlock_from_write();
         pthread_mutex_unlock(create_lock);
         return;
     }
@@ -224,7 +224,7 @@ void atm::transfer_between_accounts(int src_account_id, string src_password, int
     map<int,account*>::iterator it_dest = map_of_accounts->find(dest_account_id);
 
     //the src_account has never been created
-    if(it_src == map_of_accounts->end() || it_src->second->deleted){
+    if(it_src == map_of_accounts->end()){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
@@ -233,7 +233,7 @@ void atm::transfer_between_accounts(int src_account_id, string src_password, int
     }
 
     //the dest_account has never been created
-    if(it_dest == map_of_accounts->end() || it_dest->second->deleted){
+    if(it_dest == map_of_accounts->end()){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << dest_account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
@@ -244,14 +244,49 @@ void atm::transfer_between_accounts(int src_account_id, string src_password, int
     it_src->second->lock_for_write();
     it_dest->second->lock_for_write();
 
-    if(it_src->second->vallid_password(src_password)){
-        
-        if(it_src->second->withdrawl(amount)){
-            it_dest->second->deposit(amount);
+    if(it_src != map_of_accounts->end() && !it_src->second->deleted && it_dest != map_of_accounts->end() && !it_dest->second->deleted){
+        if(it_src->second->vallid_password(src_password)){
+            
+            if(it_src->second->withdrawl(amount)){
+                it_dest->second->deposit(amount);
 
+                pthread_mutex_lock(log_print_lock);
+                *log_txt_ptr <<  this->id << ": Transfer " << amount << " from account " << src_account_id  << " to account " << dest_account_id \
+                << " new account balance is " << it_src->second->balance <<  " new target account balance is " << it_dest->second->balance << endl;
+                pthread_mutex_unlock(log_print_lock);
+                it_src->second->unlock_from_write();
+                it_dest->second->unlock_from_write();
+                pthread_mutex_unlock(this->transfer_lock);
+                return;
+            }
+
+            else{
+                pthread_mutex_lock(log_print_lock);
+                *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " balance is lower than " << amount << endl;
+                pthread_mutex_unlock(log_print_lock);
+                it_src->second->unlock_from_write();
+                it_dest->second->unlock_from_write();
+                pthread_mutex_unlock(this->transfer_lock);
+                return;
+            }
+        }
+
+        else{
             pthread_mutex_lock(log_print_lock);
-            *log_txt_ptr <<  this->id << ": Transfer " << amount << " from account " << src_account_id  << " to account " << dest_account_id \
-            << " new account balance is " << it_src->second->balance <<  " new target account balance is " << it_dest->second->balance << endl;
+            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id " << src_account_id << " is incorrect" << endl;
+            pthread_mutex_unlock(log_print_lock);
+            it_src->second->unlock_from_write();
+            it_dest->second->unlock_from_write();
+            pthread_mutex_unlock(this->transfer_lock);
+            return;  
+        }
+    }
+
+    else{
+
+        if(it_src == map_of_accounts->end() || it_src->second->deleted){
+            pthread_mutex_lock(log_print_lock);
+            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " does not exist" << endl;
             pthread_mutex_unlock(log_print_lock);
             it_src->second->unlock_from_write();
             it_dest->second->unlock_from_write();
@@ -261,24 +296,14 @@ void atm::transfer_between_accounts(int src_account_id, string src_password, int
 
         else{
             pthread_mutex_lock(log_print_lock);
-            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << src_account_id << " balance is lower than " << amount << endl;
+            *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << dest_account_id << " does not exist" << endl;
             pthread_mutex_unlock(log_print_lock);
             it_src->second->unlock_from_write();
             it_dest->second->unlock_from_write();
             pthread_mutex_unlock(this->transfer_lock);
             return;
         }
-    }
-
-    else{
-        pthread_mutex_lock(log_print_lock);
-        *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id " << src_account_id << " is incorrect" << endl;
-        pthread_mutex_unlock(log_print_lock);
-        it_src->second->unlock_from_write();
-        it_dest->second->unlock_from_write();
-        pthread_mutex_unlock(this->transfer_lock);
-        return;  
-    }
+    }   
 }
 
 void atm::parser_file(){
