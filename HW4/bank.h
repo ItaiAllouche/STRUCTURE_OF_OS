@@ -36,6 +36,7 @@ using namespace std;
 class bank{
     public:
         int balance;
+        int account_list_num_of_readers;
         list<atm*>* list_of_atms;
         map<int,account*> map_of_accounts;
         map<int,account*> map_of_deleted_accounts;
@@ -43,6 +44,8 @@ class bank{
         pthread_mutex_t log_print_lock;
         pthread_mutex_t create_lock;
         pthread_mutex_t transfer_lock;
+        pthread_mutex_t account_list_read_lock;
+        pthread_mutex_t account_list_write_lock;
         list<string>* list_of_files;
 
         //constractor
@@ -62,5 +65,9 @@ class bank{
         void free_accounts();
 
         void free_atms();
+
+        void lock_account_list_for_write();
+
+        void unlock_account_list_from_write();
 };
 #endif

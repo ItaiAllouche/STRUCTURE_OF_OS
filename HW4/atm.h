@@ -19,6 +19,7 @@ class atm{
         map <int,account*>* map_of_accounts;
         map <int,account*>* map_of_deleted_accounts;
         ofstream* log_txt_ptr;
+        int* account_list_num_of_readers;
 
         //lock for print correctley in log file
         pthread_mutex_t* log_print_lock;
@@ -29,9 +30,19 @@ class atm{
         //lock for transfer between accounts safley
         pthread_mutex_t* transfer_lock;
 
+        //locks for access map of accoounts in parallel way
+        pthread_mutex_t* account_list_read_lock;
+
+        pthread_mutex_t* account_list_write_lock;
+        
     //constarctor
-    atm(uint id, string file_path, map<int,account*>* map_of_accounts, map<int,account*>* map_of_deleted_accounts, pthread_mutex_t* log_print_lock, 
-        pthread_mutex_t* create_lock, pthread_mutex_t* transfer_lock, ofstream* log_txt_ptr);
+    atm(uint id, string file_path, map<int,account*>* map_of_accounts, map<int,account*>* map_of_deleted_accounts, int* account_list_num_of_readers,
+        pthread_mutex_t* log_print_lock, pthread_mutex_t* create_lock, pthread_mutex_t* transfer_lock, pthread_mutex_t* account_list_read_lock,
+        pthread_mutex_t* account_list_write_lock, ofstream* log_txt_ptr);
+
+    void lock_account_list_for_read();
+
+    void unlock_account_list_from_read();
 
     //creatrs a new accounts if isnt exsists - rubin
     //insert it to map if isnt exsist

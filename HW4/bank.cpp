@@ -1,14 +1,19 @@
 #include "bank.h"
 
 bool progress = true;
+bool accounts_print = false;
+pthread_mutex_t stdout_print_lock;
 
 bank::bank(){
     this->balance = 0;
+    this->account_list_num_of_readers = 0;
     this->list_of_atms = new list<atm*>;
     this->log_txt_ptr.open("log.txt", ios::out);
     pthread_mutex_init(&this->log_print_lock, NULL);
     pthread_mutex_init(&this->create_lock, NULL);
     pthread_mutex_init(&this->transfer_lock, NULL);
+    pthread_mutex_init(&this->account_list_read_lock, NULL);
+    pthread_mutex_init(&this->account_list_write_lock, NULL);       
 }
 
 bank::~bank(){
@@ -17,11 +22,15 @@ bank::~bank(){
     pthread_mutex_destroy(&this->log_print_lock);
     pthread_mutex_destroy(&this->create_lock);
     pthread_mutex_destroy(&this->transfer_lock);
+    pthread_mutex_destroy(&this->account_list_read_lock);
+    pthread_mutex_destroy(&this->account_list_write_lock);
     this->free_accounts();    
 }
 
 void bank::accounts_status_print(){
     while(progress){
+        accounts_print = true;
+        this->lock_account_list_for_write();
         printf("\033[2J");
         printf("\033[1;1H");
         cout << "Current Bank Status" << endl;
@@ -34,6 +43,9 @@ void bank::accounts_status_print(){
             it++;  
         }
         cout << "The Bank has "<< this->balance << " $" << endl;
+        this->unlock_account_list_from_write();
+        accounts_print = false;
+        pthread_mutex_unlock(&stdout_print_lock);
         usleep(ACCOUNTS_PRINT_TIME);
     }
     return;   
@@ -88,6 +100,14 @@ void bank::free_atms(){
 
 }
 
+void bank::lock_account_list_for_write(){
+    pthread_mutex_lock(&this->account_list_write_lock);
+}
+
+void bank::unlock_account_list_from_write(){
+    pthread_mutex_unlock(&this->account_list_write_lock);
+}
+
 void* atm_handler(void* generic_atm){
     atm* curr_atm = (atm*)generic_atm;
     curr_atm->parser_file();
@@ -132,12 +152,14 @@ int main(int argc, char* argv[]){
     }
     // initiate thread for each file, each thread execute atm_handler function
     pthread_t* atm_threads = new pthread_t[arr_of_files.size()];
+    pthread_mutex_init(&stdout_print_lock, NULL);
     bank* leumi = new bank();
     atm* curr_atm;
 
     for(uint i=0; i<arr_of_files.size(); i++){
-        curr_atm = new atm(1+i,arr_of_files[i],&(leumi->map_of_accounts), &(leumi->map_of_deleted_accounts), &(leumi->log_print_lock), &(leumi->create_lock),\
-        &(leumi->transfer_lock),&(leumi->log_txt_ptr));
+        curr_atm = new atm(1+i,arr_of_files[i], &(leumi->map_of_accounts), &(leumi->map_of_deleted_accounts), &(leumi->account_list_num_of_readers),
+                           &(leumi->log_print_lock), &(leumi->create_lock), &(leumi->transfer_lock), &(leumi->account_list_read_lock),
+                           &(leumi->account_list_write_lock), &(leumi->log_txt_ptr));
 
         if(pthread_create(&atm_threads[i],NULL,atm_handler,(void*)curr_atm) != 0){
             perror("Bank error: pthread_create failed");
@@ -181,6 +203,7 @@ int main(int argc, char* argv[]){
         perror("Bank error: pthread_join failed");
         exit(1);
     }
+    pthread_mutex_destroy(&stdout_print_lock);
 
     delete[] atm_threads;
     delete leumi;
