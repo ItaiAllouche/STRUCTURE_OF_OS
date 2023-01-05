@@ -80,7 +80,7 @@ void atm::deposit_to_account(int account_id, string password, int amount){
 
     //the account has never been created
     if(it == map_of_accounts->end()){
-        //sleep(ACTION_SLEEP_TIME);
+        sleep(ACTION_SLEEP_TIME);
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
@@ -104,7 +104,7 @@ void atm::deposit_to_account(int account_id, string password, int amount){
         }
 
         else{
-            //sleep(ACTION_SLEEP_TIME);
+            sleep(ACTION_SLEEP_TIME);
             pthread_mutex_lock(log_print_lock);
             *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id " << account_id << " is incorrect" << endl;
             pthread_mutex_unlock(log_print_lock);
@@ -115,7 +115,7 @@ void atm::deposit_to_account(int account_id, string password, int amount){
     }
 
     else{
-        //sleep(ACTION_SLEEP_TIME);
+        sleep(ACTION_SLEEP_TIME);
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);

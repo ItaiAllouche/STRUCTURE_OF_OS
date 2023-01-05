@@ -24,12 +24,12 @@ bool account::vallid_password(string password){
 }
 
 void account::deposit(int amount){
-    //sleep(ACTION_SLEEP_TIME);
+    sleep(ACTION_SLEEP_TIME);
     this->balance += amount;
 }
 
 bool account::withdrawl(int amount){
-    //sleep(ACTION_SLEEP_TIME);
+    sleep(ACTION_SLEEP_TIME);
     if(this->balance < amount){
         return false;
     }
