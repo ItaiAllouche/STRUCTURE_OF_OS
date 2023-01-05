@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
             exit(1);
         }
     }
-    // initiate thread for each file, each thread execute atm_handler function
+    // initiate thread for each file, each thread executes atm_handler function
     pthread_t* atm_threads = new pthread_t[arr_of_files.size()];
     pthread_mutex_init(&stdout_print_lock, NULL);
     bank* leumi = new bank();
