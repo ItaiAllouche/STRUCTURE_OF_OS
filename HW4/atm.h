@@ -6,7 +6,6 @@
 #include <string>
 
 #define ATM_SLEEP_TIME 100000
-#define ACTION_SLEEP_TIME 1
 
 using namespace std;
 
@@ -37,7 +36,7 @@ class atm{
         
     //constarctor
     atm(uint id, string file_path, map<int,account*>* map_of_accounts, map<int,account*>* map_of_deleted_accounts, int* account_list_num_of_readers,
-        pthread_mutex_t* log_print_lock, pthread_mutex_t* create_lock, pthread_mutex_t* transfer_lock, pthread_mutex_t* account_list_read_lock,
+        pthread_mutex_t* log_print_lock, pthread_mutex_t* transfer_lock, pthread_mutex_t* account_list_read_lock,
         pthread_mutex_t* account_list_write_lock, ofstream* log_txt_ptr);
 
     void lock_account_list_for_read();

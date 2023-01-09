@@ -1,10 +1,11 @@
 #include "atm.h"
 
 extern bool accounts_print;
+extern bool stdout_print_lock_is_taken;
 extern pthread_mutex_t stdout_print_lock;
 
 atm::atm(uint id, string file_path, map<int,account*>* map_of_accounts, map<int,account*>* map_of_deleted_accounts, int* account_list_num_of_readers,
-        pthread_mutex_t* log_print_lock, pthread_mutex_t* create_lock, pthread_mutex_t* transfer_lock, pthread_mutex_t* account_list_read_lock,
+        pthread_mutex_t* log_print_lock, pthread_mutex_t* transfer_lock, pthread_mutex_t* account_list_read_lock,
         pthread_mutex_t* account_list_write_lock, ofstream* log_txt_ptr){
     this->id = id;
     this->file_path = file_path;
@@ -42,9 +43,11 @@ void atm::unlock_account_list_from_read(){
 }
 
 void atm::create_account(int account_id, string password, int balance){
-    if(accounts_print && pthread_mutex_lock(&stdout_print_lock));
-    this->lock_account_list_for_read();
-    pthread_mutex_lock(create_lock);
+
+    //pthread_mutex_lock(create_lock);
+
+    accounts_print = true;
+    pthread_mutex_lock(this->account_list_write_lock);
 
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
     //the account does not exsit
@@ -57,8 +60,14 @@ void atm::create_account(int account_id, string password, int balance){
         *log_txt_ptr << this->id << ": New account id is " <<  account_id << " with password " << password << " and initial balance " << balance << endl;
         pthread_mutex_unlock(log_print_lock);
         new_account->unlock_from_write();
-        pthread_mutex_unlock(create_lock);
-        this->unlock_account_list_from_read();
+
+        pthread_mutex_unlock(this->account_list_write_lock);
+        accounts_print = false;
+        pthread_mutex_unlock(&stdout_print_lock);
+        //if(stdout_print_lock_is_taken){
+            //pthread_mutex_unlock(&stdout_print_lock);
+            //stdout_print_lock_is_taken = false;
+        //}
         return;
     }
 
@@ -67,14 +76,25 @@ void atm::create_account(int account_id, string password, int balance){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << account_id << ": Your transaction failed - account with the same id exists" << endl;
         pthread_mutex_unlock(log_print_lock);
-        pthread_mutex_unlock(create_lock);
-        this->unlock_account_list_from_read();
+        
+        pthread_mutex_unlock(this->account_list_write_lock);
+        accounts_print = false;
+        pthread_mutex_unlock(&stdout_print_lock);
+        //if(stdout_print_lock_is_taken){
+            //pthread_mutex_unlock(&stdout_print_lock);
+            //stdout_print_lock_is_taken = false;
+        //}
         return;
     }
 }
 
 void atm::deposit_to_account(int account_id, string password, int amount){
-    if(accounts_print && pthread_mutex_lock(&stdout_print_lock));
+
+    //if a writer wants to write in map_of_acounts -> go to sleep
+    if(accounts_print){
+        pthread_mutex_lock(&stdout_print_lock);
+        stdout_print_lock_is_taken = true;
+    }
     this->lock_account_list_for_read();
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
@@ -126,7 +146,12 @@ void atm::deposit_to_account(int account_id, string password, int amount){
 }
 
 void atm::withdrawl_from_account(int account_id, string password, int amount){
-    if(accounts_print && pthread_mutex_lock(&stdout_print_lock));
+
+    //if a writer wants to write in map_of_acounts -> go to sleep
+    if(accounts_print){
+        pthread_mutex_lock(&stdout_print_lock);
+        stdout_print_lock_is_taken = true;
+    }
     this->lock_account_list_for_read();
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
@@ -188,8 +213,9 @@ void atm::withdrawl_from_account(int account_id, string password, int amount){
 }
 
 void atm::closing_account(int account_id, string password){
-    if(accounts_print && pthread_mutex_lock(&stdout_print_lock));
-    this->lock_account_list_for_read();
+    accounts_print = true;
+    pthread_mutex_lock(this->account_list_write_lock);
+
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
     //the account has never been created
@@ -198,7 +224,14 @@ void atm::closing_account(int account_id, string password){
         pthread_mutex_lock(log_print_lock);
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
-        this->unlock_account_list_from_read();
+
+        pthread_mutex_unlock(this->account_list_write_lock);
+        accounts_print = false;
+        //pthread_mutex_unlock(&stdout_print_lock);
+        if(stdout_print_lock_is_taken){
+            pthread_mutex_unlock(&stdout_print_lock);
+            stdout_print_lock_is_taken = false;
+        }
         return;
     }
 
@@ -216,7 +249,14 @@ void atm::closing_account(int account_id, string password){
             *log_txt_ptr << this->id << ": Account "<< account_id << " is now closed. Balance was " << it->second->balance  << endl;
             pthread_mutex_unlock(log_print_lock);
             it->second->unlock_from_write();
-            this->unlock_account_list_from_read();
+
+            pthread_mutex_unlock(this->account_list_write_lock);
+            accounts_print = false;
+            pthread_mutex_unlock(&stdout_print_lock);
+            //if(stdout_print_lock_is_taken){
+                //pthread_mutex_unlock(&stdout_print_lock);
+                //stdout_print_lock_is_taken = false;
+            //}
             return;
         }
 
@@ -226,7 +266,14 @@ void atm::closing_account(int account_id, string password){
             *log_txt_ptr << "Error " << this->id << ": Your transaction failed - password for account id "<< account_id << " is incorrect" << endl;
             pthread_mutex_unlock(log_print_lock);
             it->second->unlock_from_write();
-            this->unlock_account_list_from_read();
+
+            pthread_mutex_unlock(this->account_list_write_lock);
+            accounts_print = false;
+            pthread_mutex_unlock(&stdout_print_lock);
+            //if(stdout_print_lock_is_taken){
+                //pthread_mutex_unlock(&stdout_print_lock);
+                //stdout_print_lock_is_taken = false;
+            //}
             return; 
         }
     }
@@ -237,13 +284,25 @@ void atm::closing_account(int account_id, string password){
         *log_txt_ptr << "Error " << this->id << ": Your transaction failed - account id " << account_id << " does not exist" << endl;
         pthread_mutex_unlock(log_print_lock);
         it->second->unlock_from_write();
-        this->unlock_account_list_from_read();
+        
+        pthread_mutex_unlock(this->account_list_write_lock);
+        accounts_print = false;
+        pthread_mutex_unlock(&stdout_print_lock);
+        //if(stdout_print_lock_is_taken){
+            //pthread_mutex_unlock(&stdout_print_lock);
+            //stdout_print_lock_is_taken = false;
+            //}
         return; 
     }
 }
 
 void atm::balance_check(int account_id, string password){
-    if(accounts_print && pthread_mutex_lock(&stdout_print_lock));
+    
+    //if a writer wants to write in map_of_acounts -> go to sleep
+    if(accounts_print){
+        pthread_mutex_lock(&stdout_print_lock);
+        stdout_print_lock_is_taken = true;
+    }
     this->lock_account_list_for_read();
     map <int, account*>::iterator it = map_of_accounts->find(account_id);
 
@@ -293,7 +352,12 @@ void atm::balance_check(int account_id, string password){
 }
 
 void atm::transfer_between_accounts(int src_account_id, string src_password, int dest_account_id, int amount){
-    if(accounts_print && pthread_mutex_lock(&stdout_print_lock));
+    
+    //if a writer wants to write in map_of_acounts -> go to sleep
+    if(accounts_print){
+        pthread_mutex_lock(&stdout_print_lock);
+        stdout_print_lock_is_taken = true;
+    }
     this->lock_account_list_for_read();
     pthread_mutex_lock(this->transfer_lock);
     map<int,account*>::iterator it_src = map_of_accounts->find(src_account_id);

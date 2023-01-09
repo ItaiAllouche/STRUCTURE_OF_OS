@@ -42,7 +42,6 @@ class bank{
         map<int,account*> map_of_deleted_accounts;
         ofstream log_txt_ptr;
         pthread_mutex_t log_print_lock;
-        pthread_mutex_t create_lock;
         pthread_mutex_t transfer_lock;
         pthread_mutex_t account_list_read_lock;
         pthread_mutex_t account_list_write_lock;

@@ -2,6 +2,7 @@
 
 bool progress = true;
 bool accounts_print = false;
+bool stdout_print_lock_is_taken = false;
 pthread_mutex_t stdout_print_lock;
 
 bank::bank(){
@@ -10,7 +11,6 @@ bank::bank(){
     this->list_of_atms = new list<atm*>;
     this->log_txt_ptr.open("log.txt", ios::out);
     pthread_mutex_init(&this->log_print_lock, NULL);
-    pthread_mutex_init(&this->create_lock, NULL);
     pthread_mutex_init(&this->transfer_lock, NULL);
     pthread_mutex_init(&this->account_list_read_lock, NULL);
     pthread_mutex_init(&this->account_list_write_lock, NULL);       
@@ -20,7 +20,6 @@ bank::~bank(){
     this->free_atms();
     this->log_txt_ptr.close();
     pthread_mutex_destroy(&this->log_print_lock);
-    pthread_mutex_destroy(&this->create_lock);
     pthread_mutex_destroy(&this->transfer_lock);
     pthread_mutex_destroy(&this->account_list_read_lock);
     pthread_mutex_destroy(&this->account_list_write_lock);
@@ -46,6 +45,10 @@ void bank::accounts_status_print(){
         this->unlock_account_list_from_write();
         accounts_print = false;
         pthread_mutex_unlock(&stdout_print_lock);
+        //if(stdout_print_lock_is_taken){
+            //pthread_mutex_unlock(&stdout_print_lock);
+            //stdout_print_lock_is_taken = false;
+        //}
         usleep(ACCOUNTS_PRINT_TIME);
     }
     return;   
@@ -63,11 +66,11 @@ void bank::fee_collection(){
             int fee = (int)round(to_round);
             this->balance += fee;
             it->second->balance -= fee;
-            it->second->unlock_from_write();
 
             pthread_mutex_lock(&log_print_lock);
             log_txt_ptr << "Bank: commissions of " << rand_fee << " % were charged, the bank gained " << fee << " $ from account "<< it->second->id <<  endl;
             pthread_mutex_unlock(&log_print_lock);
+            it->second->unlock_from_write();
             it++;
         }
     }
@@ -158,7 +161,7 @@ int main(int argc, char* argv[]){
 
     for(uint i=0; i<arr_of_files.size(); i++){
         curr_atm = new atm(1+i,arr_of_files[i], &(leumi->map_of_accounts), &(leumi->map_of_deleted_accounts), &(leumi->account_list_num_of_readers),
-                           &(leumi->log_print_lock), &(leumi->create_lock), &(leumi->transfer_lock), &(leumi->account_list_read_lock),
+                           &(leumi->log_print_lock), &(leumi->transfer_lock), &(leumi->account_list_read_lock),
                            &(leumi->account_list_write_lock), &(leumi->log_txt_ptr));
 
         if(pthread_create(&atm_threads[i],NULL,atm_handler,(void*)curr_atm) != 0){
