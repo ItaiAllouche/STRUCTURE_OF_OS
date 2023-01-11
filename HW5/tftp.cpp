@@ -9,10 +9,10 @@
 #define MAX_CLIENTS 1
 #define NUM_OF_ARGS 4
 #define DATA_SIZE 512
-#defiine 
 
 typedef unsigned char u_char;
-typedef unsigned short u_short;
+typedef unsigned short int u_short_int;
+typedef short int short_int;
 typedef unsigned long u_long;
 
 using namespace std;
@@ -41,8 +41,8 @@ class ERROR{
 } __attribute__((packed));
 
 struct SOCK_ADDR{
-    u_short family; // AF_INET
-    u_short port;   //port number
+    short_int family; // AF_INET
+    u_short_int port;   //port number
     u_long address; //Ip 
     u_char zero[8]; //for allignments
 } __attribute__((packed));
@@ -58,8 +58,7 @@ struct BUFFER{
     u_short opcode;
     u_short block_number;
     char data[DATA_SIZE];
-}
-
+};
 
 void arg_error(){
     cerr << "TTFTP_ERROR: illegal arguments" << endl;
