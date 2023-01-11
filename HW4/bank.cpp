@@ -2,7 +2,6 @@
 
 bool progress = true;
 bool accounts_print = false;
-bool stdout_print_lock_is_taken = false;
 pthread_mutex_t stdout_print_lock;
 
 bank::bank(){
@@ -45,10 +44,6 @@ void bank::accounts_status_print(){
         this->unlock_account_list_from_write();
         accounts_print = false;
         pthread_mutex_unlock(&stdout_print_lock);
-        //if(stdout_print_lock_is_taken){
-            //pthread_mutex_unlock(&stdout_print_lock);
-            //stdout_print_lock_is_taken = false;
-        //}
         usleep(ACCOUNTS_PRINT_TIME);
     }
     return;   
@@ -59,6 +54,7 @@ void bank::fee_collection(){
         sleep(FEE_TIME);
         double rand_fee = rand() % MAX_FEE + 1;
 
+        this->lock_account_list_for_read();
         map <int, account*>::iterator it = map_of_accounts.begin();
         while(it != map_of_accounts.end() && it->second != 0){
             it->second->lock_for_write();
@@ -73,6 +69,7 @@ void bank::fee_collection(){
             it->second->unlock_from_write();
             it++;
         }
+        this->unlock_account_list_from_read();
     }
     return;
 }
@@ -109,6 +106,31 @@ void bank::lock_account_list_for_write(){
 
 void bank::unlock_account_list_from_write(){
     pthread_mutex_unlock(&this->account_list_write_lock);
+}
+
+void bank::lock_account_list_for_read(){
+    pthread_mutex_lock(&this->account_list_read_lock);
+    this->account_list_num_of_readers = this->account_list_num_of_readers + 1;
+
+    //first reader
+    if(account_list_num_of_readers == 1){
+        pthread_mutex_lock(&this->account_list_write_lock);
+    }
+    pthread_mutex_unlock(&this->account_list_read_lock);
+
+}
+
+void bank::unlock_account_list_from_read(){
+    pthread_mutex_lock(&this->account_list_read_lock);
+    this->account_list_num_of_readers = this->account_list_num_of_readers - 1;
+     
+     //last reader
+    if(account_list_num_of_readers == 0){
+        pthread_mutex_unlock(&this->account_list_write_lock);
+    }
+    pthread_mutex_unlock(&this->account_list_read_lock);
+
+
 }
 
 void* atm_handler(void* generic_atm){

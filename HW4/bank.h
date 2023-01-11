@@ -68,5 +68,9 @@ class bank{
         void lock_account_list_for_write();
 
         void unlock_account_list_from_write();
+
+        void lock_account_list_for_read();
+
+        void unlock_account_list_from_read();
 };
 #endif
