@@ -12,6 +12,9 @@
 #define MAX_CLIENTS 1
 #define NUM_OF_ARGS 4
 #define DATA_SIZE 512
+#define ACK_OPCODE 0
+#define WRQ_OPCODE 1
+#define ERROR_OPCODE 2
 
 typedef unsigned char u_char;
 typedef unsigned short int u_short_int;
@@ -20,30 +23,30 @@ typedef unsigned long u_long;
 
 using namespace std;
 
-class ACK{
+struct ACK{
     u_short opcode;
     u_short block_number;
 } __attribute__((packed));
 
-class WRQ{
+struct WRQ{
     u_short opcode;
     string file_name;
 } __attribute__((packed));
 
-class ERROR{
+struct ERROR{
     u_short opcode;
     u_short error_code;
     string error_message;
 } __attribute__((packed));
 
 
-class BUFFER{
+struct BUFFER{
     u_short opcode;
     u_short block_number;
     char data[DATA_SIZE];
 } __attribute__((packed));
 
-class SOCK_ADDR{
+struct SOCK_ADDR{
     short_int family; // AF_INET
     u_short_int port;   //port number
     u_long address; //Ip 
@@ -61,5 +64,11 @@ void send_error(int sockfd, u_short error_code, string error_message, SOCK_ADDR*
 
 // itai
 void reciving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_ptr);
+
+// use when syscall fails.
+void sys_call_error(const char* error_message){
+    perror(error_message);
+    exit(1);
+}
 
 #endif 
