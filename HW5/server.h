@@ -8,13 +8,21 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string>
+#include <stdbool.h>
 
 #define MAX_CLIENTS 1
 #define NUM_OF_ARGS 4
 #define DATA_SIZE 512
-#define ACK_OPCODE 0
-#define WRQ_OPCODE 1
-#define ERROR_OPCODE 2
+#define PACKET_SIZE 516
+#define ERROR_OPCODE 1
+#define WRQ_OPCODE 2
+#define DATA_OPCODE 3
+#define ACK_OPCODE 4
+#define INVALID_BLOCK_NUM 0
+#define REACHED_MAX_RESENDS 0
+#define WRQ_FROM_SERVED_CLIENT 4
+#define FILE_ALREADAY_EXSITS 6
+#define DATA_BEFORE_WRQ 7
 
 typedef unsigned char u_char;
 typedef unsigned short int u_short_int;
@@ -63,8 +71,8 @@ void send_ack(int sockfd, u_short block_number, SOCK_ADDR* client_addr, socklen_
 void send_error(int sockfd, u_short error_code, string error_message, SOCK_ADDR* client_addr, socklen_t client_addr_len);
 
 // itai
-void reciving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_ptr);
-
+void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_ptr, short_int timeout,
+                         SOCK_ADDR* client_addr, socklen_t client_addr_lenshort_int, short_int max_num_of_resends);
 // use when syscall fails.
 void sys_call_error(const char* error_message){
     perror(error_message);
