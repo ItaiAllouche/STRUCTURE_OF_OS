@@ -1,111 +1,62 @@
-#include <stdio.h>
-#include <iostream>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string>
-
-#define MAX_CLIENTS 1
-#define NUM_OF_ARGS 4
-#define DATA_SIZE 512
-
-typedef unsigned char u_char;
-typedef unsigned short int u_short_int;
-typedef short int short_int;
-typedef unsigned long u_long;
-
-using namespace std;
-
-
-class ACK{
-    u_short opcode;
-    u_short block_number;
-} __attribute__((packed));
-
-class WRQ{
-    u_short opcode;
-    string file_name;
-} __attribute__((packed));
-
-class DATA{
-    u_short opcode;
-    u_short block_number;
-    char data[DATA_SIZE];
-} __attribute__((packed));
-
-class ERROR{
-    u_short opcode;
-    u_short error_code;
-    string error_message;
-} __attribute__((packed));
-
-struct SOCK_ADDR{
-    short_int family; // AF_INET
-    u_short_int port;   //port number
-    u_long address; //Ip 
-    u_char zero[8]; //for allignments
-} __attribute__((packed));
-
-/*struct CLIENT_ADDR{
-    u_short family; // AF_INET
-    u_short port;   //port number
-    u_long address; //Ip 
-    u_char zero[8]; //for allignments
-} __attribute__((packed));*/
-
-struct BUFFER{
-    u_short opcode;
-    u_short block_number;
-    char data[DATA_SIZE];
-};
-
-void arg_error(){
-    cerr << "TTFTP_ERROR: illegal arguments" << endl;
-    exit(1);
-}
-
-void sys_call_error(const char* error_message){
-    perror(error_message);
-    exit(1);
-}
-
+#include "tftp.h"
 
 int main(int argc, char *argv[]){
-    //to be completed!************
-    if(argc != NUM_OF_ARGS || atoi(argv[1]) || atoi(argv[2]) || atoi(argv[3])){
+
+    //arg validation
+    if(argc != NUM_OF_ARGS || !atoi(argv[1]) || !atoi(argv[2]) || !atoi(argv[3])){
+        //cout << argc << " " << atoi(argv[1]) << " "  <<  atoi(argv[2]) << " "  << atoi(argv[3]) << endl;
         arg_error();
     }
 
-    int sockfd;
-    int new_sockfd;
-    int port_num;
-    int client_addr_len;
-    SOCK_ADDR my_addr = {0};
+    u_short port_num = atoi(argv[1]);
+    u_short timeout  = atoi(argv[2]);
+    u_short max_num_of_resends  = atoi(argv[3]);
+    struct sockaddr_in server_addr = {0};
+    struct sockaddr_in client_addr = {0};
+    socklen_t client_addr_len = sizeof(client_addr);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(port_num);
+    WRQ wrq = {0};
+    char aaa [512];
+    BUFFER buff = {0};
+    int received_msg_size = 0;
+    FILE* file_ptr = NULL;
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(sockfd < 0){
         sys_call_error("TTFTP_ERROR: socket failed");
     }
-
-    port_num = atoi(argv[1]);
-    my_addr.family = AF_INET;
-    my_addr.address = INADDR_ANY;
-    my_addr.port = htons(port_num);
-
-    if(bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr))){
+ 
+    if(bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0 ){
         sys_call_error("TTFTP_ERROR: bind failed");   
     }
 
 
-    recvfrom()
+    while(true){
 
+        //initilize buffers
+        memset(&aaa, 0, 5);
+        memset(&buff, 0, sizeof(buff));
 
+        received_msg_size = recvfrom(sockfd, aaa, 512, 0, (struct sockaddr*)&client_addr, &client_addr_len);
+        if(received_msg_size < 0){
+            sys_call_error("TTFTP_ERROR: recvfrom failed");
+        }
 
+        file_ptr = wrq_parser(sockfd, &client_addr, client_addr_len, &wrq);
+        if(file_ptr == NULL){
+            continue;
+        }
 
-
-
-
-
-
+        else{
+            send_ack(sockfd, 0, &client_addr, client_addr_len);
+            recieving_data_mode(sockfd, &buff, sizeof(buff), file_ptr, timeout, &client_addr, client_addr_len, max_num_of_resends);
+            
+            if(fclose(file_ptr) != SUCCESS){
+                sys_call_error("TTFTP_ERROR: fclose failed");
+            }
+        }
+    }
+    return 0;
 }
