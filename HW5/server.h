@@ -15,6 +15,7 @@
 #define OPCODE_SIZE 2
 #define NUM_OF_ARGS 4
 #define DATA_SIZE 512
+#define FILE_NAME_SIZE 514
 #define PACKET_SIZE 516
 
 //opcode defines
@@ -44,8 +45,7 @@ struct ACK{
 
 struct WRQ{
     u_short opcode;
-    char file_name [DATA_SIZE];
-    char trans_mode [DATA_SIZE];
+    char file_name [FILE_NAME_SIZE];
 } __attribute__((packed));
 
 struct ERROR{

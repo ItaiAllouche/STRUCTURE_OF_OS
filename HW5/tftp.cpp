@@ -17,11 +17,9 @@ int main(int argc, char *argv[]){
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(port_num);
-    WRQ wrq = {0};
-    char aaa [512];
-    BUFFER buff = {0};
+    char wrq_buff [PACKET_SIZE];
+    BUFFER data_buff = {0};
     int received_msg_size = 0;
-    FILE* file_ptr = NULL;
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(sockfd < 0){
@@ -36,22 +34,22 @@ int main(int argc, char *argv[]){
     while(true){
 
         //initilize buffers
-        memset(&aaa, 0, 5);
-        memset(&buff, 0, sizeof(buff));
+        memset(&wrq_buff, 0, 5);
+        memset(&data_buff, 0, sizeof(data_buff));
 
-        received_msg_size = recvfrom(sockfd, aaa, 512, 0, (struct sockaddr*)&client_addr, &client_addr_len);
+        received_msg_size = recvfrom(sockfd, wrq_buff, sizeof(wrq_buff), 0, (struct sockaddr*)&client_addr, &client_addr_len);
         if(received_msg_size < 0){
             sys_call_error("TTFTP_ERROR: recvfrom failed");
         }
 
-        file_ptr = wrq_parser(sockfd, &client_addr, client_addr_len, &wrq);
+        FILE* file_ptr = wrq_parser(sockfd, &client_addr, client_addr_len, (WRQ*)&wrq_buff);
         if(file_ptr == NULL){
             continue;
         }
 
         else{
             send_ack(sockfd, 0, &client_addr, client_addr_len);
-            recieving_data_mode(sockfd, &buff, sizeof(buff), file_ptr, timeout, &client_addr, client_addr_len, max_num_of_resends);
+            recieving_data_mode(sockfd, &data_buff, sizeof(data_buff), file_ptr, timeout, &client_addr, client_addr_len, max_num_of_resends);
             
             if(fclose(file_ptr) != SUCCESS){
                 sys_call_error("TTFTP_ERROR: fclose failed");

@@ -78,7 +78,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
                 //data in socket
                 else{
                     //reading from the socked into buffer
-                    message_size = recvfrom(sockfd, buff, buff_len, 0, (struct sockaddr*)client_addr, &client_addr_len);
+                    message_size = recvfrom(sockfd, (char*)buff, buff_len, 0, (struct sockaddr*)client_addr, &client_addr_len);
 
                     //fail in reading from socket
                     if(message_size < 0){
@@ -129,13 +129,8 @@ FILE* wrq_parser(int sockfd, struct sockaddr_in* client_addr, socklen_t client_a
         return NULL;
     }
 
-    if(strcmp(wrq->trans_mode, "octet") != SUCCESS){
-       send_error(sockfd, DATA_BEFORE_WRQ,"Wrong Transmission mode ", client_addr, client_addr_len);
-       return NULL;
-    }
-
     // open thr requested file with wrtie premisson
-    FILE* file_ptr = fopen((const char*)wrq->file_name, "w");
+    FILE* file_ptr = fopen(wrq->file_name, "w");
     if(file_ptr == NULL){
         send_error(sockfd, FILE_ALREADAY_EXSITS, "File already exists", client_addr, client_addr_len);
         return NULL;
