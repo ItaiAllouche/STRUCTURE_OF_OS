@@ -25,7 +25,7 @@ void send_ack(int sockfd, u_short block_number, struct sockaddr_in* client_addr,
     ack.opcode = htons(ACK_OPCODE);
     ack.block_number = htons(block_number);
 
-    if(sendto(sockfd, &ack, sizeof(ack), 0, (struct sockaddr*) client_addr, client_addr_len) < 0){
+    if(sendto(sockfd, (char*)&ack, sizeof(ack), 0, (struct sockaddr*) client_addr, client_addr_len) != sizeof(ack)){
         sys_call_error("TTFTP_ERROR: sendto faild");
     }
     return;
@@ -39,6 +39,8 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
     u_short block_number = 0;
     int missed_packets = 0;
     size_t message_size = 0;
+    struct sockaddr_in curr_client_addr = {0};
+    socklen_t curr_client_addr_len = sizeof(curr_client_addr);
 
     //initialize the bit sets     
     FD_ZERO(&readfds);
@@ -78,10 +80,15 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
                 //data in socket
                 else{
                     //reading from the socked into buffer
-                    message_size = recvfrom(sockfd, (char*)buff, buff_len, 0, (struct sockaddr*)client_addr, &client_addr_len);
+                    message_size = recvfrom(sockfd, (char*)buff, buff_len, 0, (struct sockaddr*)&curr_client_addr, &curr_client_addr_len);
+
+                    //message recevied from wrong client
+                    if(client_addr->sin_addr.s_addr != curr_client_addr.sin_addr.s_addr){
+                        send_error(sockfd, DATA_BEFORE_WRQ, "Unknown user", &curr_client_addr, curr_client_addr_len);
+                    }
 
                     //fail in reading from socket
-                    if(message_size < 0){
+                    else if(message_size < 0){
                         sys_call_error("TTFTP_ERROR: revcfrom faild");
                     }
 
@@ -92,7 +99,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
                         break;
                     }
                 }
-            }
+            }//while true
 
             //worng block number - fatal error
             if(buff->block_number != block_number+1){
@@ -112,7 +119,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
         missed_packets = 0;
 
         //writing the recived data into the file
-        if (fwrite(buff->data, 1, message_size - (PACKET_SIZE+DATA_SIZE), file_ptr) != message_size - (PACKET_SIZE+DATA_SIZE)){
+        if (fwrite(buff->data, sizeof(char), message_size - (PACKET_SIZE-DATA_SIZE), file_ptr) != message_size - (PACKET_SIZE-DATA_SIZE)){
             sys_call_error("TTFTP_ERROR: fwrite faild");
         }
 
@@ -122,19 +129,14 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
     }while(message_size >= PACKET_SIZE);
 }                        
                          
-FILE* wrq_parser(int sockfd, struct sockaddr_in* client_addr, socklen_t client_addr_len, WRQ* wrq){
-    wrq->opcode= ntohs(wrq->opcode);
-    if(wrq->opcode != WRQ_OPCODE ){
-        send_error(sockfd, DATA_BEFORE_WRQ,"Unknown user", client_addr, client_addr_len);
-        return NULL;
-    }
+void wrq_parser(WRQ* wrq_struct, char wrq_buff [PACKET_SIZE]){
+    memcpy(&wrq_struct->opcode, wrq_buff, 2);
+    wrq_struct->opcode= ntohs(wrq_struct->opcode);
+    strncpy(wrq_struct->file_name, wrq_buff + 2,strlen(wrq_buff + 2));
+    return;
+}
 
-    // open thr requested file with wrtie premisson
-    FILE* file_ptr = fopen(wrq->file_name, "w");
-    if(file_ptr == NULL){
-        send_error(sockfd, FILE_ALREADAY_EXSITS, "File already exists", client_addr, client_addr_len);
-        return NULL;
-    }
-
-    return file_ptr;
+bool file_is_exist(const char *fileName){
+    std::ifstream infile(fileName);
+    return infile.good();
 }

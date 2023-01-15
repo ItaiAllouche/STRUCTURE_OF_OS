@@ -9,6 +9,9 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <stdbool.h>
+#include <fstream>
+#include <sys/select.h>
+#include <sys/time.h>
 
 #define SUCCESS 0
 #define MAX_CLIENTS 1
@@ -39,8 +42,10 @@ typedef unsigned long u_long;
 using namespace std;
 
 struct ACK{
-    u_short opcode;
-    u_short block_number;
+    //u_short opcode;
+    //u_short block_number;
+    uint16_t opcode;
+    uint16_t block_number;
 } __attribute__((packed));
 
 struct WRQ{
@@ -71,7 +76,7 @@ struct SOCK_ADDR{
 */
 
 // in charge of validate the first packet which sent and open the requested file
-FILE* wrq_parser(int sockfd, struct sockaddr_in* client, socklen_t client_addr_len, WRQ* wrq);
+void wrq_parser(WRQ* wrq_struct, char wrq_buff [PACKET_SIZE]);
 
 void send_ack(int sockfd, u_short block_number, struct sockaddr_in* client_addr, socklen_t client_addr_len);
 
@@ -82,5 +87,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
 
 // use when syscall fails.
 void sys_call_error(const char* error_message);
+
+bool file_is_exist(const char *fileName);
 
 #endif 

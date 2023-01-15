@@ -18,15 +18,16 @@ int main(int argc, char *argv[]){
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(port_num);
     char wrq_buff [PACKET_SIZE];
+    WRQ wrq_strcut = {0};
     BUFFER data_buff = {0};
-    int received_msg_size = 0;
+    FILE* file_ptr = NULL;
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if(sockfd < 0){
         sys_call_error("TTFTP_ERROR: socket failed");
     }
  
-    if(bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0 ){
+    if(bind(sockfd, (struct sockaddr *) & server_addr, sizeof(server_addr)) < 0 ){
         sys_call_error("TTFTP_ERROR: bind failed");   
     }
 
@@ -37,17 +38,28 @@ int main(int argc, char *argv[]){
         memset(&wrq_buff, 0, 5);
         memset(&data_buff, 0, sizeof(data_buff));
 
-        received_msg_size = recvfrom(sockfd, wrq_buff, sizeof(wrq_buff), 0, (struct sockaddr*)&client_addr, &client_addr_len);
+        // expecting to receive wrq 
+        int received_msg_size = recvfrom(sockfd, wrq_buff, sizeof(wrq_buff), 0, (struct sockaddr*) & client_addr, &client_addr_len);
         if(received_msg_size < 0){
             sys_call_error("TTFTP_ERROR: recvfrom failed");
         }
 
-        FILE* file_ptr = wrq_parser(sockfd, &client_addr, client_addr_len, (WRQ*)&wrq_buff);
-        if(file_ptr == NULL){
-            continue;
+        wrq_parser(&wrq_strcut, wrq_buff);
+        if(wrq_strcut.opcode != WRQ_OPCODE){
+            send_error(sockfd, DATA_BEFORE_WRQ, "Unknown user", &client_addr, client_addr_len);
         }
 
+        /*else if(file_is_exist(wrq_strcut.file_name)){
+
+            send_error(sockfd, FILE_ALREADAY_EXSITS,"File already exists", &client_addr, client_addr_len);
+        }*/
+
         else{
+            file_ptr = fopen(wrq_strcut.file_name, "w");
+            if(file_ptr == NULL){
+                sys_call_error("fopen faild");
+            }
+            
             send_ack(sockfd, 0, &client_addr, client_addr_len);
             recieving_data_mode(sockfd, &data_buff, sizeof(data_buff), file_ptr, timeout, &client_addr, client_addr_len, max_num_of_resends);
             
@@ -56,5 +68,6 @@ int main(int argc, char *argv[]){
             }
         }
     }
+    //close(sockfd);
     return 0;
 }
