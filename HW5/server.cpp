@@ -1,7 +1,8 @@
 #include "server.h"
 
-void sys_call_error(const char* error_message){
+void sys_call_error(const char* error_message, int sockfd){
     perror(error_message);
+    close(sockfd);
     exit(1);
 }
 
@@ -14,7 +15,7 @@ void send_error(int sockfd, u_short error_code, const char* error_message, struc
     strcpy(error.error_message,error_message);
 
     if(sendto(sockfd, &error, sizeof(error), 0, (struct sockaddr*) client_addr, client_addr_len) < 0){
-        sys_call_error("TTFTP_ERROR: sendto faild");
+        sys_call_error("TTFTP_ERROR: sendto faild", sockfd);
     }
     return;
 }
@@ -25,13 +26,15 @@ void send_ack(int sockfd, u_short block_number, struct sockaddr_in* client_addr,
     ack.opcode = htons(ACK_OPCODE);
     ack.block_number = htons(block_number);
 
-    if(sendto(sockfd, (char*)&ack, sizeof(ack), 0, (struct sockaddr*) client_addr, client_addr_len) != sizeof(ack)){
-        sys_call_error("TTFTP_ERROR: sendto faild");
+    int bytes_sent = sendto(sockfd, (char*)&ack, sizeof(ack), 0, (const struct sockaddr*) client_addr, client_addr_len);
+
+    if(bytes_sent != sizeof(ack)){
+        sys_call_error("TTFTP_ERROR: sendto faild", sockfd);
     }
     return;
 }
 
-void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_ptr, short_int timeout, struct sockaddr_in* client_addr,
+void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_ptr, char* file_name,  short_int timeout, struct sockaddr_in* client_addr,
                          socklen_t client_addr_len, short_int max_num_of_resends){                        
     fd_set readfds;
     struct timeval corrent_time;
@@ -52,7 +55,6 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
         //initilize buffer
         memset(buff, 0, buff_len); 
 
-        //validate the receieved data 
         do{
             //wait to read data from the socket
             while(true){
@@ -62,7 +64,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
                 data_to_read = select(sockfd+1, &readfds, NULL, NULL, &corrent_time);
 
                 if(data_to_read < 0){
-                    sys_call_error("TTFTP_ERROR: select faild");
+                    sys_call_error("TTFTP_ERROR: select faild", sockfd);
                 }
 
                 // no data was in the socket in timeout window
@@ -72,6 +74,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
                     // too many packets were missed - fatal error
                     if(missed_packets >= max_num_of_resends){
                         send_error(sockfd, REACHED_MAX_RESENDS, "Abandoning file transmission", client_addr, client_addr_len);
+                        delete_file(file_name, sockfd);
                         return;
                     }
                     send_ack(sockfd, block_number, client_addr, client_addr_len);
@@ -80,7 +83,12 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
                 //data in socket
                 else{
                     //reading from the socked into buffer
-                    message_size = recvfrom(sockfd, (char*)buff, buff_len, 0, (struct sockaddr*)&curr_client_addr, &curr_client_addr_len);
+                    message_size = recvfrom(sockfd, buff, buff_len, 0, (struct sockaddr*)&curr_client_addr, &curr_client_addr_len);
+                    cout << message_size << endl;
+                    cout << "1" << endl;
+                    cout << buff->data << endl;
+                    cout << strlen(buff->data) << endl;
+                    cout << "2" << endl;
 
                     //message recevied from wrong client
                     if(client_addr->sin_addr.s_addr != curr_client_addr.sin_addr.s_addr){
@@ -89,7 +97,7 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
 
                     //fail in reading from socket
                     else if(message_size < 0){
-                        sys_call_error("TTFTP_ERROR: revcfrom faild");
+                        sys_call_error("TTFTP_ERROR: revcfrom faild", sockfd);
                     }
 
                     else{
@@ -104,28 +112,30 @@ void recieving_data_mode(int sockfd, BUFFER* buff, size_t buff_len, FILE* file_p
             //worng block number - fatal error
             if(buff->block_number != block_number+1){
                 send_error(sockfd, INVALID_BLOCK_NUM, "Bad block number", client_addr, client_addr_len);
+                delete_file(file_name, sockfd);
                 return;
             }
 
             //unexpected packet - fatal error
             if(buff->opcode != DATA_OPCODE){
                 send_error(sockfd, INVALID_BLOCK_NUM, "Unexpected packet", client_addr, client_addr_len);
+                delete_file(file_name, sockfd);
                 return;
             }
-
-        } while (false);// remove this condition?*************************************
+        }while(false);
 
         //recieved packet is valid
         missed_packets = 0;
 
         //writing the recived data into the file
         if (fwrite(buff->data, sizeof(char), message_size - (PACKET_SIZE-DATA_SIZE), file_ptr) != message_size - (PACKET_SIZE-DATA_SIZE)){
-            sys_call_error("TTFTP_ERROR: fwrite faild");
+            sys_call_error("TTFTP_ERROR: fwrite faild", sockfd);
         }
 
         //sending ack to client
         block_number++;
         send_ack(sockfd, block_number, client_addr, client_addr_len);
+
     }while(message_size >= PACKET_SIZE);
 }                        
                          
@@ -139,4 +149,13 @@ void wrq_parser(WRQ* wrq_struct, char wrq_buff [PACKET_SIZE]){
 bool file_is_exist(const char *fileName){
     std::ifstream infile(fileName);
     return infile.good();
+}
+
+void delete_file (char* file_name, int sockfd){
+    if(remove(file_name) == SUCCESS){
+        return;
+    }
+    else{
+        sys_call_error("remove faild", sockfd);
+    }
 }
