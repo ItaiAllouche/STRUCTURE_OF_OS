@@ -1,8 +1,8 @@
-#ifndef _TFTP_H
-#define _TFTP_H
+#ifndef _TTFTPS_H
+#define _TTFTPS_H
 
 #include "server.h"
-#include "tftp.h"
+#include "ttftps.h"
 
 void arg_error(){
     cerr << "TTFTP_ERROR: illegal arguments" << endl;
